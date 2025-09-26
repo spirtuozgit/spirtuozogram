@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 434.2 433.9">
+  <!-- Generator: Adobe Illustrator 29.3.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 146)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #00cada;
+      }
+
+      .st0, .st1, .st2, .st3 {
+        stroke: #000;
+        stroke-miterlimit: 10;
+        stroke-width: 3px;
+      }
+
+      .st1 {
+        fill: #00d877;
+      }
+
+      .st4, .st5, .st6, .st7, .st8 {
+        isolation: isolate;
+      }
+
+      .st5 {
+        font-size: 29.9px;
+      }
+
+      .st5, .st6, .st7, .st8 {
+        fill: #fff;
+        font-family: Rubik-Regular, Rubik;
+      }
+
+      .st6 {
+        font-size: 28.9px;
+      }
+
+      .st7 {
+        font-size: 24.1px;
+      }
+
+      .st8 {
+        font-size: 32.8px;
+      }
+
+      .st2 {
+        fill: #033558;
+      }
+
+      .st3 {
+        fill: #f75d83;
+      }
+    </style>
+  </defs>
+  <g id="Layer_3">
+    <g>
+      <g>
+        <path class="st3" d="M217.3,217l-55.4,207.1c114.4,30.6,231.9-37.4,262.5-151.8,4.9-18.3,7.3-36.6,7.3-55.5h-214.4c0,.1,0,.1,0,.1Z"/>
+        <path class="st1" d="M217.3,217l-148.9,154.3c27.3,26.3,56.9,43,93.5,52.8l55.4-207.1h0Z"/>
+        <path class="st2" d="M217.3,217L254.4,5.8C137.8-14.7,26.6,63.2,6.1,179.8c-12.9,73.2,8.8,139.8,62.3,191.4l148.9-154.3h0Z"/>
+        <path class="st0" d="M217.3,217h214.4c0-105.7-73.3-192.9-177.3-211.2l-37.1,211.2h0Z"/>
+        <g class="st4">
+          <text class="st8" transform="translate(292.9 168.6) rotate(-40)"><tspan x="0" y="0">Сплю</tspan></text>
+        </g>
+        <g class="st4">
+          <text class="st6" transform="translate(167.4 182.8) rotate(-153.1)"><tspan x="0" y="0">Ра</tspan></text>
+          <text class="st6" transform="translate(136.9 167.3) rotate(-153.1)"><tspan x="0" y="0">б</tspan></text>
+          <text class="st6" transform="translate(123 160.2) rotate(-153.1)"><tspan x="0" y="0">о</tspan></text>
+          <text class="st6" transform="translate(108.3 152.8) rotate(-153.1)"><tspan x="0" y="0">таю</tspan></text>
+        </g>
+        <g class="st4">
+          <text class="st5" transform="translate(139.5 337) rotate(119.6)"><tspan x="0" y="0">Ем</tspan></text>
+        </g>
+        <g class="st4">
+          <text class="st7" transform="translate(243.1 267.2) rotate(52.7)"><tspan x="0" y="0">Глажу</tspan></text>
+          <text class="st7" transform="translate(285.8 323.2) rotate(52.7)"><tspan x="0" y="0"> </tspan></text>
+          <text class="st7" transform="translate(288.9 327.4) rotate(52.7)"><tspan x="0" y="0">к</tspan></text>
+          <text class="st7" transform="translate(296.4 337.1) rotate(52.7)"><tspan x="0" y="0">о</tspan></text>
+          <text class="st7" transform="translate(304.7 348) rotate(52.7)"><tspan x="0" y="0">та</tspan></text>
+        </g>
+      </g>
+      <circle cx="217.8" cy="216.9" r="37.5"/>
+    </g>
+  </g>
+</svg>
