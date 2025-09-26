@@ -57,12 +57,12 @@ export default function ManVsCat() {
             const clock = document.querySelector(".clock");
 
             if (cat) cat.style.transform = `translateX(${Math.sin(rad) * depth}px) scale(1.1)`;
-            if (food) food.style.transform = `translateX(${Math.sin(rad) * depth * 1.4}px)`; // еда двигается по X
+            if (food) food.style.transform = `translateX(${Math.sin(rad) * depth * 1.4}px)`;
             if (mouse) mouse.style.transform = `translateX(${Math.sin(rad * 1.5) * depth}px)`;
             if (clock) clock.style.transform = `translateX(${Math.sin(rad * 1.5) * depth - 40}px) scale(1.05)`;
         }
 
-        // === мышь ===
+        // мышь
         handle.addEventListener("mousedown", (e) => {
             dragging = true;
             autoRotateRef.current = false;
@@ -89,7 +89,7 @@ export default function ManVsCat() {
             prevPointer = cur;
         });
 
-        // === сенсор ===
+        // сенсор
         handle.addEventListener("touchstart", (e) => {
             dragging = true;
             autoRotateRef.current = false;
@@ -116,7 +116,7 @@ export default function ManVsCat() {
             prevPointer = cur;
         });
 
-        // === анимация ===
+        // анимация
         function tick() {
             if (autoRotateRef.current) {
                 targetAngleRef.current += 0.3;
@@ -159,46 +159,46 @@ export default function ManVsCat() {
                 Синхронизация с котом в течение дня
             </h1>
 
-            {/* SVG графика */}
+            {/* SVG диаграммы */}
             <div className="relative flex gap-2 z-10 justify-center">
                 <object
                     id="chart-left"
                     type="image/svg+xml"
                     data="/svg/Man.svg"
-                    className="w-[35vw] max-w-[160px] sm:max-w-[200px] md:max-w-[260px] lg:max-w-[320px] h-auto"
+                    className="w-[45vw] max-w-[180px] sm:max-w-[220px] md:max-w-[280px] lg:max-w-[320px] h-auto"
                 ></object>
                 <object
                     id="chart-right"
                     type="image/svg+xml"
                     data="/svg/Cat.svg"
-                    className="w-[35vw] max-w-[160px] sm:max-w-[200px] md:max-w-[260px] lg:max-w-[320px] h-auto"
+                    className="w-[45vw] max-w-[180px] sm:max-w-[220px] md:max-w-[280px] lg:max-w-[320px] h-auto"
                 ></object>
                 <img
                     src="/svg/sync.svg"
                     alt="sync"
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[8vw] max-w-[50px] sm:max-w-[60px] md:max-w-[70px] lg:max-w-[80px] pointer-events-none"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[10vw] max-w-[60px] sm:max-w-[70px] md:max-w-[80px] lg:max-w-[90px] pointer-events-none"
                 />
             </div>
 
-            {/* Кольцо */}
+            {/* Кольцо с таймером */}
             <div
-                className="relative w-[28vw] max-w-[120px] sm:max-w-[160px] md:max-w-[200px] lg:max-w-[220px] aspect-square z-[999]"
+                className="relative w-[65vw] max-w-[200px] sm:max-w-[220px] md:max-w-[240px] lg:max-w-[260px] aspect-square z-[999] mt-4"
                 id="ring"
             >
                 <div className="absolute inset-0 rounded-full border-2 border-white/80"></div>
 
                 <div
                     id="ringHandle"
-                    className="absolute w-[18px] h-[18px] bg-contain bg-center -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                    className="absolute w-[20px] h-[20px] bg-contain bg-center -translate-x-1/2 -translate-y-1/2 cursor-pointer"
                     style={{ backgroundImage: "url(/svg/handle.svg)" }}
                 ></div>
 
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300 pointer-events-none">
-                    <div id="time" className="text-[2.5vw] sm:text-sm md:text-base lg:text-lg select-none">
+                    <div id="time" className="text-[4vw] sm:text-sm md:text-base lg:text-lg select-none">
                         00 ч 00 мин
                     </div>
 
-                    <label className="relative inline-flex items-center cursor-pointer pointer-events-auto scale-[0.6] sm:scale-75 md:scale-90 lg:scale-100">
+                    <label className="relative inline-flex items-center cursor-pointer pointer-events-auto scale-[0.7] sm:scale-90 md:scale-100">
                         <input
                             id="autoToggle"
                             type="checkbox"
@@ -217,7 +217,7 @@ export default function ManVsCat() {
                         <div className="absolute left-1 top-1 w-3.5 h-3.5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                     </label>
 
-                    <span className="text-[2vw] sm:text-[10px] md:text-xs text-gray-400 select-none">
+                    <span className="text-[3vw] sm:text-[11px] md:text-xs text-gray-400 select-none">
                         Автопрокрутка
                     </span>
                 </div>
@@ -225,21 +225,23 @@ export default function ManVsCat() {
 
             {/* Фоновые элементы */}
             <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                {/* Кот главный */}
                 <img
                     src="/image/image_cat.png"
-                    className="cat absolute bottom-0 left-[5%] w-[40vw] max-w-[220px] sm:max-w-[300px] lg:max-w-[420px] h-auto blur-[0.5px] z-5"
+                    className="cat absolute bottom-0 left-1/2 -translate-x-1/2 w-[60vw] max-w-[300px] sm:max-w-[380px] lg:max-w-[420px] h-auto blur-[0.5px] z-5"
                 />
+                {/* Второстепенные */}
                 <img
                     src="/image/image_mouse.png"
-                    className="mouse absolute top-[10%] right-[15%] w-[18vw] max-w-[80px] sm:max-w-[100px] lg:max-w-[140px] h-auto blur-[1px]"
+                    className="mouse absolute top-[15%] right-[20%] w-[14vw] max-w-[60px] sm:opacity-100 opacity-50 h-auto blur-[1px]"
                 />
                 <img
                     src="/image/image_food.png"
-                    className="food absolute top-[5%] right-[5%] w-[22vw] max-w-[120px] sm:max-w-[180px] lg:max-w-[240px] h-auto blur-[0.5px]"
+                    className="food absolute top-[5%] right-[5%] w-[18vw] max-w-[80px] sm:opacity-100 opacity-50 h-auto blur-[0.5px]"
                 />
                 <img
                     src="/image/image_clock.png"
-                    className="clock absolute bottom-[25%] left-[5%] w-[22vw] max-w-[120px] sm:max-w-[160px] lg:max-w-[220px] h-auto blur-[2px] z-0"
+                    className="clock absolute bottom-[30%] left-[5%] w-[18vw] max-w-[70px] sm:opacity-100 opacity-40 h-auto blur-[2px] z-0"
                 />
             </div>
 
