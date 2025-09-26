@@ -1,12 +1,11 @@
 import "./globals.css";
 import { Rubik } from "next/font/google";
-import ProgressBar from "./progress-bar"; // клиентский компонент
 
-/* Подключаем шрифт Rubik */
+// подключаем Rubik через next/font
 const rubik = Rubik({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "700"],
-  variable: "--font-rubik",
+  variable: "--font-rubik", // сохраняем в CSS-переменную
 });
 
 export const metadata = {
@@ -17,10 +16,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ru">
-      <body className={rubik.variable}>
-        <ProgressBar />
-        {children}
-      </body>
+      <body className={rubik.variable}>{children}</body>
     </html>
   );
 }

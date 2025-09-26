@@ -1,18 +1,22 @@
 @import "tailwindcss";
 
-/* ===== Цвета и шрифты по умолчанию (тёмная тема) ===== */
+/* ===== Цвета и базовые переменные ===== */
 :root {
   --background: #000000;
   --foreground: #ffffff;
 }
 
+/* Tailwind v4 inline-тема */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Rubik как основной шрифт */
   --font-sans: var(--font-rubik), ui-sans-serif, system-ui, -apple-system,
-    Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
+/* Базовые ресеты */
 html,
 body {
   margin: 0;
@@ -24,35 +28,4 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-}
-
-/* ===== NProgress ===== */
-#nprogress {
-  pointer-events: none;
-}
-
-#nprogress .bar {
-  background: #22c55e;
-  position: fixed;
-  z-index: 1031;
-  top: 0;
-  left: 0;
-
-  width: 100%;
-  height: 3px;
-}
-
-#nprogress .peg {
-  display: block;
-  position: absolute;
-  right: 0px;
-  width: 100px;
-  height: 100%;
-  box-shadow: 0 0 10px #22c55e, 0 0 5px #22c55e;
-  opacity: 1;
-  transform: rotate(3deg) translate(0px, -4px);
-}
-
-#nprogress .spinner {
-  display: none;
 }
