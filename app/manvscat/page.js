@@ -47,6 +47,26 @@ export default function ManVsCat() {
             handle.style.top = `${c + r * Math.sin(rad)}px`;
         }
 
+        function updateParallax(angle) {
+            const rad = (angle * Math.PI) / 180;
+            const depth = 20;
+
+            const cat = document.querySelector(".cat");
+            const food = document.querySelector(".food");
+            const mouse = document.querySelector(".mouse");
+            const clock = document.querySelector(".clock");
+
+            if (cat)
+                cat.style.transform = `translateX(${Math.sin(rad) * depth}px) scale(1.1)`;
+            if (food)
+                food.style.transform = `translateX(${Math.sin(rad) * depth * 1.4}px)`;
+            if (mouse)
+                mouse.style.transform = `translateX(${Math.sin(rad * 1.5) * depth}px)`;
+            if (clock)
+                clock.style.transform = `translateX(${Math.sin(rad * 1.5) * depth - 40
+                    }px) scale(1.05)`;
+        }
+
         // drag start
         function startDrag(x, y) {
             dragging = true;
@@ -114,6 +134,9 @@ export default function ManVsCat() {
             if (left) left.style.transform = `rotate(${a}deg)`;
             if (right) right.style.transform = `rotate(${-a}deg)`;
 
+            // параллакс
+            updateParallax(drawAngleRef.current);
+
             requestAnimationFrame(tick);
         }
 
@@ -122,7 +145,7 @@ export default function ManVsCat() {
     }, []);
 
     return (
-        <main className="bg-black text-white w-screen h-screen overflow-hidden">
+        <main className="bg-black text-white w-screen h-screen overflow-hidden select-none">
             {/* Кнопка назад */}
             <Link
                 href="/"
@@ -141,12 +164,12 @@ export default function ManVsCat() {
                     <object
                         id="chart-left"
                         data="/svg/Man.svg"
-                        className="w-[360px] h-[360px]"
+                        className="w-[360px] h-[360px] pointer-events-none select-none"
                     />
                     <object
                         id="chart-right"
                         data="/svg/Cat.svg"
-                        className="w-[360px] h-[360px]"
+                        className="w-[360px] h-[360px] pointer-events-none select-none"
                     />
                     <img
                         src="/svg/sync.svg"
@@ -195,19 +218,19 @@ export default function ManVsCat() {
                 {/* фоновые */}
                 <img
                     src="/image/image_cat.png"
-                    className="absolute bottom-0 left-[100px] w-[420px]"
+                    className="cat absolute bottom-0 left-[100px] w-[420px]"
                 />
                 <img
                     src="/image/image_clock.png"
-                    className="absolute bottom-[250px] left-[40px] w-[220px]"
+                    className="clock absolute bottom-[250px] left-[40px] w-[220px]"
                 />
                 <img
                     src="/image/image_food.png"
-                    className="absolute top-[80px] right-[120px] w-[240px]"
+                    className="food absolute top-[80px] right-[120px] w-[240px]"
                 />
                 <img
                     src="/image/image_mouse.png"
-                    className="absolute top-[180px] right-[180px] w-[140px]"
+                    className="mouse absolute top-[180px] right-[180px] w-[140px]"
                 />
             </div>
 
@@ -215,11 +238,11 @@ export default function ManVsCat() {
             <div className="block lg:hidden w-[1170px] h-[2532px] mx-auto relative overflow-hidden">
                 <img
                     src="/image/image_food.png"
-                    className="absolute top-[100px] right-[300px] w-[180px]"
+                    className="food absolute top-[100px] right-[300px] w-[180px]"
                 />
                 <img
                     src="/image/image_mouse.png"
-                    className="absolute top-[120px] left-[320px] w-[120px]"
+                    className="mouse absolute top-[120px] left-[320px] w-[120px]"
                 />
 
                 <h1 className="absolute top-[400px] left-1/2 -translate-x-1/2 text-3xl">
@@ -230,12 +253,12 @@ export default function ManVsCat() {
                     <object
                         id="chart-left"
                         data="/svg/Man.svg"
-                        className="w-[420px] h-[420px]"
+                        className="w-[420px] h-[420px] pointer-events-none select-none"
                     />
                     <object
                         id="chart-right"
                         data="/svg/Cat.svg"
-                        className="w-[420px] h-[420px]"
+                        className="w-[420px] h-[420px] pointer-events-none select-none"
                     />
                     <img
                         src="/svg/sync.svg"
@@ -283,11 +306,11 @@ export default function ManVsCat() {
 
                 <img
                     src="/image/image_cat.png"
-                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[360px]"
+                    className="cat absolute bottom-0 left-1/2 -translate-x-1/2 w-[360px]"
                 />
                 <img
                     src="/image/image_clock.png"
-                    className="absolute bottom-[380px] left-[200px] w-[160px]"
+                    className="clock absolute bottom-[380px] left-[200px] w-[160px]"
                 />
             </div>
         </main>

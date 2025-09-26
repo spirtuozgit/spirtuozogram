@@ -1,31 +1,28 @@
 @import "tailwindcss";
 
-/* ===== Цвета и базовые переменные ===== */
+/* Базовые переменные */
 :root {
   --background: #000000;
   --foreground: #ffffff;
 }
 
-/* Tailwind v4 inline-тема */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
-  /* Rubik как основной шрифт */
-  --font-sans: var(--font-rubik), ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
-/* Базовые ресеты */
+/* Общие стили */
 html,
 body {
   margin: 0;
   padding: 0;
   height: 100%;
-}
-
-body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+}
+
+/* Запрет выделения и перетаскивания */
+* {
+  user-select: none;
+  -webkit-user-drag: none;
 }
