@@ -9,8 +9,8 @@ export default function Home() {
     },
     {
       title: "Насколько сегодня пятница",
-      href: "/socks",
-      desc: "Тепловая карта носков по квартире",
+      href: "/friday",
+      desc: "Соотношения дня недели к пятнице",
     },
     {
       title: "Ты конь?",
