@@ -4,13 +4,13 @@ import Link from "next/link";
 
 export default function ManVsCat() {
     const [autoRotate, setAutoRotate] = useState(false);
-
     const targetAngleRef = useRef(0);
     const drawAngleRef = useRef(0);
     const autoRotateRef = useRef(false);
 
     useEffect(() => {
         const ring = document.getElementById("ring");
+        if (!ring) return;
         const handle = document.getElementById("ringHandle");
         const timeEl = document.getElementById("time");
         const left = document.getElementById("chart-left");
@@ -22,10 +22,8 @@ export default function ManVsCat() {
 
         const toRad = (deg) => (deg * Math.PI) / 180;
         const norm360 = (a) => ((a % 360) + 360) % 360;
-
-        function shortestDelta(target, current) {
-            return (target - current + 540) % 360 - 180;
-        }
+        const shortestDelta = (target, current) =>
+            (target - current + 540) % 360 - 180;
 
         function pointerAngle(clientX, clientY) {
             const r = ring.getBoundingClientRect();
@@ -39,7 +37,9 @@ export default function ManVsCat() {
         }
 
         function placeHandleBy(angleDeg) {
-            const size = parseFloat(getComputedStyle(ring).getPropertyValue("width"));
+            const size = parseFloat(
+                getComputedStyle(ring).getPropertyValue("width")
+            );
             const r = size / 2 - 2;
             const c = size / 2;
             const rad = toRad(angleDeg - 90);
@@ -47,82 +47,59 @@ export default function ManVsCat() {
             handle.style.top = `${c + r * Math.sin(rad)}px`;
         }
 
-        function updateParallax(angle) {
-            const rad = (angle * Math.PI) / 180;
-            const depth = 20;
-
-            const cat = document.querySelector(".cat");
-            const food = document.querySelector(".food");
-            const mouse = document.querySelector(".mouse");
-            const clock = document.querySelector(".clock");
-
-            if (cat) cat.style.transform = `translateX(${Math.sin(rad) * depth}px) scale(1.1)`;
-            if (food) food.style.transform = `translateX(${Math.sin(rad) * depth * 1.4}px)`;
-            if (mouse) mouse.style.transform = `translateX(${Math.sin(rad * 1.5) * depth}px)`;
-            if (clock) clock.style.transform = `translateX(${Math.sin(rad * 1.5) * depth - 40}px) scale(1.05)`;
-        }
-
-        // мышь
-        handle.addEventListener("mousedown", (e) => {
+        // drag start
+        function startDrag(x, y) {
             dragging = true;
             autoRotateRef.current = false;
             setAutoRotate(false);
-            prevPointer = pointerAngle(e.clientX, e.clientY);
-            e.preventDefault();
+            prevPointer = pointerAngle(x, y);
             ring.classList.add("ring-active");
-        });
+        }
 
-        document.addEventListener("mouseup", () => {
+        // drag move
+        function moveDrag(x, y) {
+            if (!dragging) return;
+            const cur = pointerAngle(x, y);
+            const step = shortestDelta(cur, prevPointer);
+            targetAngleRef.current += step;
+            prevPointer = cur;
+        }
+
+        // drag end
+        function endDrag() {
             if (dragging) {
                 targetAngleRef.current = drawAngleRef.current;
             }
             dragging = false;
             prevPointer = null;
             ring.classList.remove("ring-active");
-        });
+        }
 
-        document.addEventListener("mousemove", (e) => {
-            if (!dragging) return;
-            const cur = pointerAngle(e.clientX, e.clientY);
-            const step = shortestDelta(cur, prevPointer);
-            targetAngleRef.current += step;
-            prevPointer = cur;
-        });
+        // mouse
+        handle.addEventListener("mousedown", (e) => startDrag(e.clientX, e.clientY));
+        document.addEventListener("mousemove", (e) =>
+            moveDrag(e.clientX, e.clientY)
+        );
+        document.addEventListener("mouseup", endDrag);
 
-        // сенсор
-        handle.addEventListener("touchstart", (e) => {
-            dragging = true;
-            autoRotateRef.current = false;
-            setAutoRotate(false);
-            const touch = e.touches[0];
-            prevPointer = pointerAngle(touch.clientX, touch.clientY);
-            e.preventDefault();
-            ring.classList.add("ring-active");
-        });
+        // touch
+        handle.addEventListener("touchstart", (e) =>
+            startDrag(e.touches[0].clientX, e.touches[0].clientY)
+        );
+        document.addEventListener("touchmove", (e) =>
+            moveDrag(e.touches[0].clientX, e.touches[0].clientY)
+        );
+        document.addEventListener("touchend", endDrag);
 
-        document.addEventListener("touchend", () => {
-            if (dragging) targetAngleRef.current = drawAngleRef.current;
-            dragging = false;
-            prevPointer = null;
-            ring.classList.remove("ring-active");
-        });
-
-        document.addEventListener("touchmove", (e) => {
-            if (!dragging) return;
-            const touch = e.touches[0];
-            const cur = pointerAngle(touch.clientX, touch.clientY);
-            const step = shortestDelta(cur, prevPointer);
-            targetAngleRef.current += step;
-            prevPointer = cur;
-        });
-
-        // анимация
+        // animation loop
         function tick() {
             if (autoRotateRef.current) {
                 targetAngleRef.current += 0.3;
             }
-
-            const delta = shortestDelta(targetAngleRef.current, drawAngleRef.current);
+            const delta = shortestDelta(
+                targetAngleRef.current,
+                drawAngleRef.current
+            );
             drawAngleRef.current += delta * ECHO;
 
             const a = norm360(drawAngleRef.current);
@@ -137,7 +114,6 @@ export default function ManVsCat() {
             if (left) left.style.transform = `rotate(${a}deg)`;
             if (right) right.style.transform = `rotate(${-a}deg)`;
 
-            updateParallax(drawAngleRef.current);
             requestAnimationFrame(tick);
         }
 
@@ -146,110 +122,174 @@ export default function ManVsCat() {
     }, []);
 
     return (
-        <main className="relative flex flex-col items-center justify-center h-screen bg-black text-white overflow-hidden">
+        <main className="bg-black text-white w-screen h-screen overflow-hidden">
             {/* Кнопка назад */}
             <Link
                 href="/"
-                className="absolute top-4 left-4 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-md shadow-md transition z-20 text-sm sm:text-base"
+                className="absolute top-4 left-4 px-3 py-1 bg-gray-800 hover:bg-gray-700 rounded-md z-20"
             >
                 ← Назад
             </Link>
 
-            <h1 className="text-lg sm:text-xl mb-6 text-center px-2">
-                Синхронизация с котом в течение дня
-            </h1>
+            {/* === ПК макет === */}
+            <div className="hidden lg:block w-[1920px] h-[1080px] mx-auto relative overflow-hidden">
+                <h1 className="absolute top-[60px] left-1/2 -translate-x-1/2 text-2xl">
+                    Синхронизация с котом в течение дня
+                </h1>
 
-            {/* SVG диаграммы */}
-            <div className="relative flex gap-2 z-10 justify-center">
-                <object
-                    id="chart-left"
-                    type="image/svg+xml"
-                    data="/svg/Man.svg"
-                    className="w-[45vw] max-w-[180px] sm:max-w-[220px] md:max-w-[280px] lg:max-w-[320px] h-auto"
-                ></object>
-                <object
-                    id="chart-right"
-                    type="image/svg+xml"
-                    data="/svg/Cat.svg"
-                    className="w-[45vw] max-w-[180px] sm:max-w-[220px] md:max-w-[280px] lg:max-w-[320px] h-auto"
-                ></object>
-                <img
-                    src="/svg/sync.svg"
-                    alt="sync"
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[10vw] max-w-[60px] sm:max-w-[70px] md:max-w-[80px] lg:max-w-[90px] pointer-events-none"
-                />
-            </div>
-
-            {/* Кольцо с таймером */}
-            <div
-                className="relative w-[65vw] max-w-[200px] sm:max-w-[220px] md:max-w-[240px] lg:max-w-[260px] aspect-square z-[999] mt-4"
-                id="ring"
-            >
-                <div className="absolute inset-0 rounded-full border-2 border-white/80"></div>
+                <div className="absolute top-[150px] left-1/2 -translate-x-1/2 flex gap-[40px]">
+                    <object
+                        id="chart-left"
+                        data="/svg/Man.svg"
+                        className="w-[360px] h-[360px]"
+                    />
+                    <object
+                        id="chart-right"
+                        data="/svg/Cat.svg"
+                        className="w-[360px] h-[360px]"
+                    />
+                    <img
+                        src="/svg/sync.svg"
+                        className="absolute left-1/2 top-1/2 w-[80px] -translate-x-1/2 -translate-y-1/2"
+                    />
+                </div>
 
                 <div
-                    id="ringHandle"
-                    className="absolute w-[20px] h-[20px] bg-contain bg-center -translate-x-1/2 -translate-y-1/2 cursor-pointer"
-                    style={{ backgroundImage: "url(/svg/handle.svg)" }}
-                ></div>
-
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300 pointer-events-none">
-                    <div id="time" className="text-[4vw] sm:text-sm md:text-base lg:text-lg select-none">
-                        00 ч 00 мин
+                    id="ring"
+                    className="absolute top-[600px] left-1/2 -translate-x-1/2 w-[260px] h-[260px]"
+                >
+                    <div className="absolute inset-0 rounded-full border-2 border-white/80"></div>
+                    <div
+                        id="ringHandle"
+                        className="absolute w-[20px] h-[20px] bg-contain bg-center -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                        style={{ backgroundImage: "url(/svg/handle.svg)" }}
+                    ></div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300 pointer-events-none">
+                        <div id="time" className="text-lg select-none">
+                            00 ч 00 мин
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer pointer-events-auto">
+                            <input
+                                id="autoToggle"
+                                type="checkbox"
+                                checked={autoRotate}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setAutoRotate(checked);
+                                    autoRotateRef.current = checked;
+                                    if (!checked) {
+                                        targetAngleRef.current = drawAngleRef.current;
+                                    }
+                                }}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-green-500 transition"></div>
+                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                        </label>
+                        <span className="text-xs text-gray-400 select-none">
+                            Автопрокрутка
+                        </span>
                     </div>
-
-                    <label className="relative inline-flex items-center cursor-pointer pointer-events-auto scale-[0.7] sm:scale-90 md:scale-100">
-                        <input
-                            id="autoToggle"
-                            type="checkbox"
-                            checked={autoRotate}
-                            onChange={(e) => {
-                                const checked = e.target.checked;
-                                setAutoRotate(checked);
-                                autoRotateRef.current = checked;
-                                if (!checked) {
-                                    targetAngleRef.current = drawAngleRef.current;
-                                }
-                            }}
-                            className="sr-only peer"
-                        />
-                        <div className="w-10 h-5 bg-gray-700 rounded-full peer-checked:bg-green-500 transition"></div>
-                        <div className="absolute left-1 top-1 w-3.5 h-3.5 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-                    </label>
-
-                    <span className="text-[3vw] sm:text-[11px] md:text-xs text-gray-400 select-none">
-                        Автопрокрутка
-                    </span>
                 </div>
-            </div>
 
-            {/* Фоновые элементы */}
-            <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-                {/* Кот главный */}
+                {/* фоновые */}
                 <img
                     src="/image/image_cat.png"
-                    className="cat absolute bottom-0 left-1/2 -translate-x-1/2 w-[60vw] max-w-[300px] sm:max-w-[380px] lg:max-w-[420px] h-auto blur-[0.5px] z-5"
-                />
-                {/* Второстепенные */}
-                <img
-                    src="/image/image_mouse.png"
-                    className="mouse absolute top-[15%] right-[20%] w-[14vw] max-w-[60px] sm:opacity-100 opacity-50 h-auto blur-[1px]"
-                />
-                <img
-                    src="/image/image_food.png"
-                    className="food absolute top-[5%] right-[5%] w-[18vw] max-w-[80px] sm:opacity-100 opacity-50 h-auto blur-[0.5px]"
+                    className="absolute bottom-0 left-[100px] w-[420px]"
                 />
                 <img
                     src="/image/image_clock.png"
-                    className="clock absolute bottom-[30%] left-[5%] w-[18vw] max-w-[70px] sm:opacity-100 opacity-40 h-auto blur-[2px] z-0"
+                    className="absolute bottom-[250px] left-[40px] w-[220px]"
+                />
+                <img
+                    src="/image/image_food.png"
+                    className="absolute top-[80px] right-[120px] w-[240px]"
+                />
+                <img
+                    src="/image/image_mouse.png"
+                    className="absolute top-[180px] right-[180px] w-[140px]"
                 />
             </div>
 
-            <style jsx>{`
-        #ring.ring-active .rounded-full {
-          border-color: #4ade80;
-        }
-      `}</style>
+            {/* === Смартфон макет === */}
+            <div className="block lg:hidden w-[1170px] h-[2532px] mx-auto relative overflow-hidden">
+                <img
+                    src="/image/image_food.png"
+                    className="absolute top-[100px] right-[300px] w-[180px]"
+                />
+                <img
+                    src="/image/image_mouse.png"
+                    className="absolute top-[120px] left-[320px] w-[120px]"
+                />
+
+                <h1 className="absolute top-[400px] left-1/2 -translate-x-1/2 text-3xl">
+                    Синхронизация с котом в течение дня
+                </h1>
+
+                <div className="absolute top-[500px] left-1/2 -translate-x-1/2 flex gap-[30px]">
+                    <object
+                        id="chart-left"
+                        data="/svg/Man.svg"
+                        className="w-[420px] h-[420px]"
+                    />
+                    <object
+                        id="chart-right"
+                        data="/svg/Cat.svg"
+                        className="w-[420px] h-[420px]"
+                    />
+                    <img
+                        src="/svg/sync.svg"
+                        className="absolute left-1/2 top-1/2 w-[70px] -translate-x-1/2 -translate-y-1/2"
+                    />
+                </div>
+
+                <div
+                    id="ring"
+                    className="absolute top-[1200px] left-1/2 -translate-x-1/2 w-[220px] h-[220px]"
+                >
+                    <div className="absolute inset-0 rounded-full border-2 border-white/80"></div>
+                    <div
+                        id="ringHandle"
+                        className="absolute w-[20px] h-[20px] bg-contain bg-center -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                        style={{ backgroundImage: "url(/svg/handle.svg)" }}
+                    ></div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-gray-300 pointer-events-none">
+                        <div id="time" className="text-lg select-none">
+                            00 ч 00 мин
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer pointer-events-auto">
+                            <input
+                                id="autoToggle"
+                                type="checkbox"
+                                checked={autoRotate}
+                                onChange={(e) => {
+                                    const checked = e.target.checked;
+                                    setAutoRotate(checked);
+                                    autoRotateRef.current = checked;
+                                    if (!checked) {
+                                        targetAngleRef.current = drawAngleRef.current;
+                                    }
+                                }}
+                                className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-700 rounded-full peer-checked:bg-green-500 transition"></div>
+                            <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                        </label>
+                        <span className="text-xs text-gray-400 select-none">
+                            Автопрокрутка
+                        </span>
+                    </div>
+                </div>
+
+                <img
+                    src="/image/image_cat.png"
+                    className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[360px]"
+                />
+                <img
+                    src="/image/image_clock.png"
+                    className="absolute bottom-[380px] left-[200px] w-[160px]"
+                />
+            </div>
         </main>
     );
 }
