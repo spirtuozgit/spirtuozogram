@@ -1,31 +1,91 @@
 @import "tailwindcss";
 
-/* Базовые переменные */
+/* ---------- Цвета из логотипа ---------- */
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
+  --logo-yellow: #FBBF24;
+  --logo-teal: #14B8A6;
+  --logo-pink: #EC4899;
+  --logo-green: #84CC16;
+  --logo-orange: #F97316;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-}
-
-/* Общие стили */
-html,
-body {
+/* ---------- Общие стили ---------- */
+html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  background: var(--background);
-  color: var(--foreground);
-  overflow: hidden;       /* ❌ запрет прокрутки */
-  touch-action: none;     /* ❌ отключаем свайпы */
+  background: #000;
+  color: #fff;
+  font-family: "Rubik", sans-serif;
+  overflow-x: hidden;
 }
 
-/* Запрет выделения и перетаскивания */
+/* запрет выделения и перетаскивания */
 * {
   user-select: none;
   -webkit-user-drag: none;
 }
-	
+
+/* ---------- Анимации ---------- */
+@keyframes float {
+  0% { transform: translateY(0) translateX(0) rotate(0deg); }
+  50% { transform: translateY(-40px) translateX(20px) rotate(180deg); }
+  100% { transform: translateY(0) translateX(0) rotate(360deg); }
+}
+
+@keyframes drift {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(30px) translateY(-30px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+.animate-float {
+  animation: float 12s ease-in-out infinite;
+}
+.animate-drift {
+  animation: drift 10s ease-in-out infinite;
+}
+
+/* ---------- Фигуры на фоне ---------- */
+.shape {
+  position: absolute;
+  opacity: 0.2;
+}
+
+.shape.circle {
+  border-radius: 50%;
+}
+
+.shape.square {
+  border-radius: 0.5rem;
+}
+
+.shape.triangle {
+  width: 0;
+  height: 0;
+  border-left: 20px solid transparent;
+  border-right: 20px solid transparent;
+  border-bottom: 35px solid var(--logo-teal);
+}
+
+.shape.ring {
+  border: 4px solid var(--logo-green);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.shape.cross {
+  width: 30px;
+  height: 6px;
+  background: var(--logo-pink);
+}
+.shape.cross::after {
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 6px;
+  background: var(--logo-pink);
+  transform: rotate(90deg);
+  top: 0;
+  left: 0;
+}

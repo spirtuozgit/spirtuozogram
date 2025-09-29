@@ -10,10 +10,18 @@
   },
   "dependencies": {
     "chart.js": "^4.5.0",
+    "chartjs-adapter-date-fns": "^3.0.0",
+    "colorthief": "^2.6.0",
+    "fast-average-color": "^9.5.0",
+    "framer-motion": "^12.23.22",
+    "leaflet": "^1.9.4",
     "next": "15.5.4",
     "nprogress": "^0.2.0",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-leaflet": "^5.0.0",
+    "react-zoom-pan-pinch": "^3.7.0",
+    "suncalc": "^1.9.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
