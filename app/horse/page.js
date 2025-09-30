@@ -123,6 +123,7 @@ export default function HorseTest() {
   const [loaded, setLoaded] = useState(false);
 
   const hoofAudioRef = useRef(null);
+  const [showInfo, setShowInfo] = useState(false);
 
   /* === Loader === */
   useEffect(() => {
@@ -148,11 +149,10 @@ export default function HorseTest() {
     img1.src = HORSE_FRAMES[0];
     img2.src = HORSE_FRAMES[1];
 
-    // создаём и запускаем звук копыт
     hoofAudioRef.current = new Audio("/sound/hoof.mp3");
     hoofAudioRef.current.loop = true;
     hoofAudioRef.current.volume = 0.6;
-    hoofAudioRef.current.play().catch(() => {}); // автозапуск
+    hoofAudioRef.current.play().catch(() => {});
 
     return () => {
       if (hoofAudioRef.current) {
@@ -163,14 +163,12 @@ export default function HorseTest() {
     };
   }, []);
 
-  /* === кадры === */
   useEffect(() => {
     if (!loaded) return;
     const id = setInterval(() => setFrame((f) => (f + 1) % HORSE_FRAMES.length), ANIMATION_SPEED);
     return () => clearInterval(id);
   }, [loaded]);
 
-  /* === движение === */
   useEffect(() => {
     if (!loaded) return;
     const interval = setInterval(() => {
@@ -195,7 +193,6 @@ export default function HorseTest() {
     return () => clearInterval(interval);
   }, [loaded]);
 
-  /* === автопрокрутка === */
   useEffect(() => {
     const last = activeNodes[activeNodes.length - 1];
     const el = nodeRefs.current[last];
@@ -242,7 +239,15 @@ export default function HorseTest() {
 
       {/* Заголовок */}
       <h1 className="text-4xl font-bold mb-2 z-20">Я лошадь?</h1>
-      <p className="text-lg text-white/60 mb-10 z-20">наиболее точный интерактивный тест</p>
+      <p className="text-lg text-white/60 mb-4 z-20">наиболее точный психолгический тест</p>
+
+      {/* Ссылка на модалку */}
+      <button
+        onClick={() => setShowInfo(true)}
+        className="italic text-sm text-gray-400 hover:text-gray-200 mb-10 z-20"
+      >
+        Почему люди страдают Гиппохорсикой? (Syndroma Hippohorsica)
+      </button>
 
       {/* Лошади */}
       {horses.map((h) => (
@@ -336,6 +341,57 @@ export default function HorseTest() {
 
       {/* Футер */}
       <FooterLink />
+
+      {/* Модалка с глассморфизмом */}
+      {showInfo && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div
+            className="relative max-w-2xl w-full p-6 rounded-2xl
+                       bg-white/20 backdrop-blur-xl border border-white/30
+                       shadow-2xl text-white"
+          >
+            <button
+              onClick={() => setShowInfo(false)}
+              className="absolute top-3 right-3 text-xl font-bold text-white/80 hover:text-red-400"
+            >
+              ✕
+            </button>
+            <h2 className="text-2xl font-bold mb-4">Синдром Гиппохорсики (Syndroma Hippohorsica)</h2>
+            <p className="mb-2">
+              — редкое и малоизученное состояние, при котором у человека формируется устойчивая
+              идентификация себя с лошадью. Заболевание чаще всего развивается у лиц, находящихся в
+              состоянии хронической переработки и профессионального выгорания. Распространённым
+              фоновым убеждением является установка «работаю как лошадь», со временем приобретающая
+              патологический характер.
+            </p>
+            <p className="mb-2">
+              Этиологически синдром связан с длительным стрессом, нарушением баланса труда и отдыха.
+            </p>
+            <p className="mb-2">
+              Клиническая картина включает три формы. В лёгкой пациенты занимаются хоббихорсингом и
+              коллекционируют предметы, связанные с лошадьми, иногда сопровождая это спонтанным
+              ржанием. Средняя форма характеризуется навязчивыми высказываниями о собственной
+              «лошадиной сущности», скачкообразным мышлением, а также характерной привычкой у мужчин
+              носить длинные пальто. В тяжёлой стадии возникают приступы громкого ржания не к месту,
+              ночной бред с нелепыми ассоциациями и выраженная социальная дезадаптация.
+            </p>
+            <p className="mb-2">
+              Прогноз благоприятный для жизни, но осложнённый для социальной и профессиональной
+              деятельности. Возможен переход в хроническую стадию (hippohorsomania chronica).
+            </p>
+            <p className="mb-2">
+              Лечение носит комплексный характер: снижение нагрузки, отдых в естественной среде
+              («пастбищная терапия»), дозированная физическая активность. В тяжёлых случаях
+              целесообразен длительный отпуск.
+            </p>
+            <p>
+              Таким образом, синдром Гиппохорсики можно рассматривать как психосоматический ответ на
+              профессиональное выгорание, сопровождающийся специфическими поведенческими
+              особенностями, включая характерный выбор одежды у мужчин.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

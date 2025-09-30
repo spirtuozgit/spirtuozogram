@@ -1,13 +1,8 @@
 "use client";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import L from "leaflet";
-
-// подключаем стили leaflet только на клиенте
-if (typeof window !== "undefined") {
-  require("leaflet/dist/leaflet.css");
-}
 
 // иконка ISS
 const issIcon = new L.Icon({

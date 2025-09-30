@@ -7,7 +7,7 @@ import FooterLink from "../../components/FooterLink";
 /* === ПАРАМЕТРЫ === */
 const CELL = 4;
 const ANIMATION_SPEED = 400;
-const MOVE_SPEED = 4;
+const MOVE_SPEED = 4; // базовая скорость
 const EAT_RADIUS = 12;
 
 /* === АУДИО КЭШ === */
@@ -99,17 +99,25 @@ export default function MicrobeGame() {
           return da < db ? a : b;
         });
 
+        const dist = Math.hypot(x - nearest.x, y - nearest.y);
+
+        // скорость: быстрее вдали, медленнее вблизи
+        const speed = Math.max(
+          MOVE_SPEED * 0.5, // минимальная скорость
+          Math.min(MOVE_SPEED + dist / 80, MOVE_SPEED * 3) // ограничение сверху
+        );
+
         const angle = Math.atan2(nearest.y - y, nearest.x - x);
         const t = Date.now() / 300;
         const curve = Math.sin(t) * 0.5;
         const curveAngle = angle + curve;
 
-        x += Math.cos(curveAngle) * MOVE_SPEED;
-        y += Math.sin(curveAngle) * MOVE_SPEED;
+        x += Math.cos(curveAngle) * speed;
+        y += Math.sin(curveAngle) * speed;
 
         // Поедание
-        if (Math.hypot(x - nearest.x, y - nearest.y) < EAT_RADIUS && !nearest.eaten) {
-          nearest.eaten = true; // ✅ защита от повторного срабатывания
+        if (dist < EAT_RADIUS && !nearest.eaten) {
+          nearest.eaten = true;
           setFood((prevFood) => prevFood.filter((f) => f.id !== nearest.id));
           setScore((s) => s + 1);
           playSound("/sound/hroom.mp3");
@@ -118,7 +126,6 @@ export default function MicrobeGame() {
             const phrase = phrases[Math.floor(Math.random() * phrases.length)];
             const bubbleId = `${Date.now()}-${Math.random()}`;
 
-            // случайное размещение вокруг микроба
             let offsetX, offsetY;
             const radius = 40;
             let tries = 0;
@@ -129,8 +136,7 @@ export default function MicrobeGame() {
               tries++;
             } while (
               bubbles.some(
-                (b) =>
-                  Math.hypot(b.offsetX - offsetX, b.offsetY - offsetY) < 40
+                (b) => Math.hypot(b.offsetX - offsetX, b.offsetY - offsetY) < 40
               ) &&
               tries < 10
             );

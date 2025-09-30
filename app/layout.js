@@ -1,11 +1,12 @@
 import "./globals.css";
+import "leaflet/dist/leaflet.css"; // глобальные стили leaflet
 import { Rubik } from "next/font/google";
 
 // подключаем Rubik через next/font
 const rubik = Rubik({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "700"],
-  variable: "--font-rubik", // сохраняем в CSS-переменную
+  variable: "--font-rubik",
 });
 
 export const metadata = {

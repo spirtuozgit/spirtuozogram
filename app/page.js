@@ -1,8 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 const tiles = [
@@ -41,9 +41,28 @@ function Tile({ tile }) {
 }
 
 function AgeCheck({ onYes, onNo }) {
+  const [logoError, setLogoError] = useState(false);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white text-center p-6">
-      <h1 className="text-3xl font-bold mb-8">spirtuoz.ru</h1>
+      {/* Лого или fallback */}
+      {!logoError ? (
+        <>
+          <Image
+            src="/logo_small.png"
+            alt="SPIRTUOZ logo"
+            width={200}
+            height={60}
+            className="w-[200px] h-auto mb-2"
+            priority
+            onError={() => setLogoError(true)}
+          />
+          <p className="text-sm text-gray-400 mb-8">spirtuoz.ru</p>
+        </>
+      ) : (
+        <h1 className="text-3xl font-bold mb-8">spirtuoz.ru</h1>
+      )}
+
       <h2 className="text-2xl mb-6">Вам есть 18 лет?</h2>
       <div className="flex gap-6">
         <button
@@ -68,17 +87,28 @@ export default function HomePage() {
   const [isAdult, setIsAdult] = useState(null);
   const router = useRouter();
 
+  // проверка при загрузке
+  useEffect(() => {
+    const stored = sessionStorage.getItem("isAdult");
+    if (stored !== null) {
+      setIsAdult(stored === "true");
+      setAgeChecked(true);
+    }
+  }, []);
+
   if (!ageChecked) {
     return (
       <AgeCheck
         onYes={() => {
           setIsAdult(true);
           setAgeChecked(true);
+          sessionStorage.setItem("isAdult", "true");
         }}
         onNo={() => {
           setIsAdult(false);
           setAgeChecked(true);
-          router.push("/kids"); // ✅ редирект на детскую страницу
+          sessionStorage.setItem("isAdult", "false");
+          router.push("/kids"); // редирект на детскую страницу
         }}
       />
     );

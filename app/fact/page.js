@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import FooterLink from "../../components/FooterLink"; // путь может отличаться, смотри структуру проекта
+import FooterLink from "../../components/FooterLink"; // путь может отличаться
 
 function sleep(ms, signal) {
   return new Promise((resolve) => {
@@ -36,23 +36,13 @@ export default function FactPage() {
   useEffect(() => {
     const a = new Audio("/sound/typewrite.mp3");
     a.preload = "auto";
-    a.loop = true; // играет фоном пока печатает
+    a.loop = true;
     audioRef.current = a;
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
       }
     };
-  }, []);
-
-  // сброс в полночь
-  useEffect(() => {
-    const now = new Date();
-    const msToMidnight =
-      new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() -
-      now.getTime();
-    const t = setTimeout(() => setCurrentIndex(0), msToMidnight);
-    return () => clearTimeout(t);
   }, []);
 
   // печать
@@ -67,7 +57,6 @@ export default function FactPage() {
     setText("");
 
     const run = async () => {
-      // стартуем звук
       if (audioRef.current) {
         try {
           audioRef.current.currentTime = 0;
@@ -79,13 +68,10 @@ export default function FactPage() {
         }
       }
 
-      // печатаем посимвольно
       for (let i = 0; i < fact.length; i++) {
         if (controller.signal.aborted) return;
-
         setText((prev) => prev + fact.charAt(i));
 
-        // задержка: 40–70 мс, иногда «задумчивость»
         let delay = 40 + Math.floor(Math.random() * 31);
         if (fact.charAt(i) === " " && Math.random() < 0.15) {
           delay = 100 + Math.floor(Math.random() * 101);
@@ -94,7 +80,6 @@ export default function FactPage() {
         await sleep(delay, controller.signal);
       }
 
-      // стоп звук после печати
       if (audioRef.current && !audioRef.current.paused) {
         try {
           audioRef.current.pause();
@@ -102,10 +87,17 @@ export default function FactPage() {
         } catch {}
       }
 
-      // пауза 5 секунд → следующий факт
+      // пауза → выбираем случайный следующий факт
       await sleep(5000, controller.signal);
       if (!controller.signal.aborted) {
-        setCurrentIndex((i) => (i + 1) % facts.length);
+        setCurrentIndex((prev) => {
+          if (facts.length <= 1) return 0;
+          let next;
+          do {
+            next = Math.floor(Math.random() * facts.length);
+          } while (next === prev);
+          return next;
+        });
       }
     };
 
