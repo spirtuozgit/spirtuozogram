@@ -12,8 +12,8 @@ const tiles = [
   { href: "/microbe", label: "Некультурный микроб", icon: "/icons/microbe_icon.png" },
   { href: "/lenin", label: "Этапы Ленина", icon: "/icons/lenin_icon.png" },
   { href: "/iss", label: "Где МКС?", icon: "/icons/iss_icon.png" },
-  { href: "/population", label: "Население планеты", icon: "/icons/population_icon.png" },
   { href: "/fact", label: "Факты", icon: "/icons/fact_icon.png" },
+  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
   { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
 ];
 

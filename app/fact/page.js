@@ -23,6 +23,7 @@ export default function FactPage() {
 
   const audioRef = useRef(null);
   const abortRef = useRef(null);
+  const lastIndexRef = useRef(-1); // запомним последний показанный факт
 
   // загрузка фактов
   useEffect(() => {
@@ -31,6 +32,22 @@ export default function FactPage() {
       .then((data) => setFacts((Array.isArray(data) ? data : []).map(String)))
       .finally(() => setLoading(false));
   }, []);
+
+  // выбрать случайный стартовый факт (не тот же, что был прошлый раз)
+  useEffect(() => {
+    if (facts.length > 0 && currentIndex === 0) {
+      let next;
+      if (facts.length === 1) {
+        next = 0;
+      } else {
+        do {
+          next = Math.floor(Math.random() * facts.length);
+        } while (next === lastIndexRef.current);
+      }
+      setCurrentIndex(next);
+      lastIndexRef.current = next;
+    }
+  }, [facts]);
 
   // подготовка звука
   useEffect(() => {
@@ -96,6 +113,7 @@ export default function FactPage() {
           do {
             next = Math.floor(Math.random() * facts.length);
           } while (next === prev);
+          lastIndexRef.current = next;
           return next;
         });
       }
