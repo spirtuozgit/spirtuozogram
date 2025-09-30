@@ -2,47 +2,28 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import ColorThief from "colorthief";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const tiles = [
+  { href: "/horse", label: "Я лошадь?", icon: "/icons/horse_icon.png" },
+  { href: "/pop", label: "Тык", icon: "/icons/pop_icon.png" },
+  { href: "/duck", label: "Крутить уточку", icon: "/icons/duck_icon.png" },
+  { href: "/microbe", label: "Некультурный микроб", icon: "/icons/microbe_icon.png" },
   { href: "/lenin", label: "Этапы Ленина", icon: "/icons/lenin_icon.png" },
   { href: "/iss", label: "Где МКС?", icon: "/icons/iss_icon.png" },
   { href: "/population", label: "Население планеты", icon: "/icons/population_icon.png" },
-  { href: "/pop", label: "Тык", icon: "/icons/pop_icon.png" },
-  { href: "/microbe", label: "Микроб", icon: "/icons/microbe_icon.png" },
-  { href: "/horse", label: "Я лошадь?", icon: "/icons/horse_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
+  { href: "/fact", label: "Факты", icon: "/icons/fact_icon.png" },
   { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
 ];
 
 function Tile({ tile }) {
-  const [bg, setBg] = useState("linear-gradient(135deg, #444, #222)");
-
-  useEffect(() => {
-    const img = new window.Image();
-    img.crossOrigin = "Anonymous";
-    img.src = tile.icon;
-
-    img.onload = () => {
-      const colorThief = new ColorThief();
-      const palette = colorThief.getPalette(img, 2); // 2 главных цвета
-      if (palette && palette.length >= 2) {
-        const [c1, c2] = palette;
-        const gradient = `linear-gradient(135deg, rgb(${c1[0]},${c1[1]},${c1[2]}) , rgb(${c2[0]},${c2[1]},${c2[2]}))`;
-        setBg(gradient);
-      }
-    };
-  }, [tile.icon]);
-
   return (
     <Link href={tile.href} className="flex flex-col items-center group">
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center 
                    shadow-md border border-white/20 overflow-hidden transition-transform 
-                   group-hover:scale-105"
-        style={{ background: bg }}
+                   group-hover:scale-105 bg-gradient-to-br from-gray-600 to-gray-800"
       >
         <Image
           src={tile.icon}
@@ -59,7 +40,58 @@ function Tile({ tile }) {
   );
 }
 
+function AgeCheck({ onYes, onNo }) {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white text-center p-6">
+      <h1 className="text-3xl font-bold mb-8">spirtuoz.ru</h1>
+      <h2 className="text-2xl mb-6">Вам есть 18 лет?</h2>
+      <div className="flex gap-6">
+        <button
+          onClick={onYes}
+          className="px-6 py-2 rounded-xl bg-green-600 hover:bg-green-700 transition"
+        >
+          Да
+        </button>
+        <button
+          onClick={onNo}
+          className="px-6 py-2 rounded-xl bg-red-600 hover:bg-red-700 transition"
+        >
+          Нет
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
+  const [ageChecked, setAgeChecked] = useState(false);
+  const [isAdult, setIsAdult] = useState(null);
+  const router = useRouter();
+
+  if (!ageChecked) {
+    return (
+      <AgeCheck
+        onYes={() => {
+          setIsAdult(true);
+          setAgeChecked(true);
+        }}
+        onNo={() => {
+          setIsAdult(false);
+          setAgeChecked(true);
+          router.push("/kids"); // ✅ редирект на детскую страницу
+        }}
+      />
+    );
+  }
+
+  if (isAdult === false) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black text-white">
+        Переход...
+      </div>
+    );
+  }
+
   return (
     <main className="homepage relative flex flex-col items-center justify-between min-h-screen text-white px-6 py-8 overflow-hidden">
       {/* Лого + подпись */}
@@ -78,20 +110,22 @@ export default function HomePage() {
       </div>
 
       {/* Плитки */}
-      <div className="relative z-10 w-full max-w-4xl px-8 py-10 
+      <div
+        className="relative z-10 w-fit mx-auto px-4 py-6 
                       rounded-3xl 
                       bg-gradient-to-r from-white/10 to-white/5 
                       backdrop-blur-xl 
                       border border-white/20 
-                      shadow-[0_8px_32px_rgba(0,0,0,0.37)]">
-        <div className="grid grid-cols-3 gap-8">
+                      shadow-[0_8px_32px_rgba(0,0,0,0.37)]"
+      >
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {tiles.map((tile, i) => (
             <Tile key={i} tile={tile} />
           ))}
         </div>
       </div>
 
-      {/* Ссылка внизу */}
+      {/* Футтер */}
       <footer className="z-10 text-gray-500 text-sm mb-4 mt-8">
         <a
           href="https://t.me/dimaspirtuoz"

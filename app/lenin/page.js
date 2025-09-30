@@ -1,10 +1,11 @@
 "use client";
 
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
+import FooterLink from "../../components/FooterLink"; // ✅ футер
 
 export default function LeninPage() {
   return (
-    <main className="bg-black min-h-screen relative">
+    <main className="bg-black min-h-screen relative flex flex-col">
       {/* Кнопка назад — крестик на чёрном фоне */}
       <button
         aria-label="Назад"
@@ -15,7 +16,7 @@ export default function LeninPage() {
       </button>
 
       {/* Десктоп: zoom/pan в аккуратном вьюпорте */}
-      <div className="hidden md:flex items-center justify-center py-8">
+      <div className="hidden md:flex flex-1 items-center justify-center py-8">
         <TransformWrapper
           initialScale={1}
           minScale={0.5}
@@ -45,7 +46,7 @@ export default function LeninPage() {
       </div>
 
       {/* Мобилка: вертикальная прокрутка, картинка ниже крестика */}
-      <div className="md:hidden w-full pt-16 pb-6">
+      <div className="md:hidden flex-1 w-full pt-16 pb-6">
         <img
           src="/phone.jpg"
           alt="Этапы жизни Ленина"
@@ -53,6 +54,9 @@ export default function LeninPage() {
           draggable={false}
         />
       </div>
+
+      {/* фиксированный футер */}
+      <FooterLink />
     </main>
   );
 }

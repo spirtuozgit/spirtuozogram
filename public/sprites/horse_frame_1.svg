@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 12 8">
+  <!-- Generator: Adobe Illustrator 29.3.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 146)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #381400;
+      }
+
+      .st1 {
+        fill: #632800;
+      }
+
+      .st2 {
+        fill: #231f20;
+      }
+    </style>
+  </defs>
+  <polygon class="st1" points="0 3 0 5 1 5 1 4 2 4 2 6 2 8 3 8 3 6 4 6 4 8 5 8 5 6 6 6 7 6 7 8 8 8 8 6 9 6 9 8 10 8 10 6 10 4 10 2 12 2 12 0 10 0 9 0 8 0 7 0 7 1 6 1 6 2 4 2 2 2 1 2 1 3 0 3"/>
+  <rect class="st1" x="6" y="2" width="2" height="2" transform="translate(14 6) rotate(-180)"/>
+  <rect class="st1" x="8" y="2" width="2" height="2" transform="translate(18 6) rotate(-180)"/>
+  <rect class="st1" x="4" y="2" width="2" height="2" transform="translate(10 6) rotate(-180)"/>
+  <rect class="st1" x="2" y="2" width="2" height="2" transform="translate(6 6) rotate(-180)"/>
+  <rect class="st1" x="6" y="4" width="2" height="2" transform="translate(14 10) rotate(-180)"/>
+  <rect class="st1" x="8" y="4" width="2" height="2" transform="translate(18 10) rotate(-180)"/>
+  <rect class="st1" x="4" y="4" width="2" height="2" transform="translate(10 10) rotate(-180)"/>
+  <rect class="st1" x="2" y="4" width="2" height="2" transform="translate(6 10) rotate(-180)"/>
+  <rect class="st1" x="8" y="0" width="2" height="2" transform="translate(18 2) rotate(-180)"/>
+  <rect class="st1" x="10" y="0" width="2" height="2" transform="translate(22 2) rotate(-180)"/>
+  <rect class="st1" x="9" y="6" width="1" height="2" transform="translate(19 14) rotate(-180)"/>
+  <rect class="st0" x="7" y="6" width="1" height="2" transform="translate(15 14) rotate(-180)"/>
+  <rect class="st0" x="2" y="6" width="1" height="2" transform="translate(5 14) rotate(-180)"/>
+  <rect class="st1" x="4" y="6" width="1" height="2" transform="translate(9 14) rotate(-180)"/>
+  <rect class="st2" x="1" y="2" width="1" height="2" transform="translate(3 6) rotate(-180)"/>
+  <rect class="st2" x="7" y="0" width="1" height="2" transform="translate(15 2) rotate(-180)"/>
+  <rect class="st2" x="7" y="2" width="1" height="2" transform="translate(15 6) rotate(-180)"/>
+  <rect class="st2" x="7" y="0" width="2" height="1"/>
+  <rect class="st2" x="6" y="1" width="1" height="2" transform="translate(13 4) rotate(-180)"/>
+  <rect class="st2" x="0" y="3" width="1" height="2" transform="translate(1 8) rotate(-180)"/>
+</svg>

@@ -1,116 +1,158 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
+import Loader from "../../components/Loader";
+import FooterLink from "../../components/FooterLink";
+
+/* === ПАРАМЕТРЫ === */
+const CELL = 4;
+const ANIMATION_SPEED = 400;
+const MOVE_SPEED = 4;
+const EAT_RADIUS = 12;
+
+/* === АУДИО КЭШ === */
+const audioCache = {};
+function preloadAudio(src) {
+  return new Promise((resolve) => {
+    if (audioCache[src]) return resolve();
+    const a = new Audio(src);
+    a.preload = "auto";
+    a.addEventListener("canplaythrough", () => {
+      audioCache[src] = a;
+      resolve();
+    });
+    a.addEventListener("error", resolve);
+  });
+}
+function playSound(src) {
+  const base = audioCache[src];
+  const a = base ? base.cloneNode(true) : new Audio(src);
+  a.play().catch(() => {});
+}
 
 export default function MicrobeGame() {
-  const CELL = 10;
-  const COLORS = ["#3498db", "#2ecc71", "#9b59b6", "#1abc9c", "#f39c12"];
-  const GROWTH_STAGES = [
-    { score: 10, size: 15, tentacle: "tentaclesSmall" },
-    { score: 50, size: 20, tentacle: "tentaclesChip" },
-    { score: 100, size: 30, tentacle: "tentaclesAngle" },
-    { score: 200, size: 40, tentacle: "tentaclesSpider" },
-    { score: 350, size: 55, tentacle: "tentaclesCrazy" },
-  ];
-
-  const [state, setState] = useState("life"); // life | death | end
   const [food, setFood] = useState([]);
   const [explosions, setExplosions] = useState([]);
   const [score, setScore] = useState(0);
-  const [microbe, setMicrobe] = useState({
-    x: 50,
-    y: 50,
-    size: 10,
-    color: COLORS[Math.floor(Math.random() * COLORS.length)],
-    tentacleAnim: "tentaclesSmall",
-  });
+  const [microbe, setMicrobe] = useState({ x: 128, y: 128 });
+  const [frame, setFrame] = useState(0);
+  const [done, setDone] = useState(false);
 
-  // Клик → еда
+  const [phrases, setPhrases] = useState([]);
+  const [bubbles, setBubbles] = useState([]);
+
+  const frames = ["/sprites/microbe_frame_1.svg", "/sprites/microbe_frame_2.svg"];
+
+  /* === Загрузка звуков и фраз === */
+  useEffect(() => {
+    const load = async () => {
+      const sounds = ["/sound/hroom.mp3"];
+      await Promise.all(sounds.map(preloadAudio));
+
+      try {
+        const res = await fetch("/data/phrases.json");
+        const json = await res.json();
+        setPhrases(json);
+      } catch (err) {
+        console.error("Ошибка загрузки фраз:", err);
+      }
+
+      setDone(true);
+    };
+    load();
+  }, []);
+
+  /* === Анимация кадров === */
+  useEffect(() => {
+    const id = setInterval(() => {
+      setFrame((f) => (f + 1) % frames.length);
+    }, ANIMATION_SPEED);
+    return () => clearInterval(id);
+  }, []);
+
+  /* === Клик → еда === */
   const handleClick = (e) => {
-    if (state !== "life" && state !== "end") return;
     const rect = e.currentTarget.getBoundingClientRect();
     const gx = Math.floor((e.clientX - rect.left) / CELL) * CELL;
     const gy = Math.floor((e.clientY - rect.top) / CELL) * CELL;
 
     const id = Date.now();
-    setFood((prev) => [...prev, { id, x: gx, y: gy }]);
-    setExplosions((prev) => [...prev, { id, x: gx, y: gy }]);
+    setFood((prev) => [...prev, { id, x: gx, y: gy, eaten: false }]);
 
+    setExplosions((prev) => [...prev, { id, x: gx, y: gy }]);
     setTimeout(() => {
       setExplosions((prev) => prev.filter((ex) => ex.id !== id));
-    }, 500);
+    }, 400);
   };
 
-  // Движение к ближайшей еде
+  /* === Движение и поедание === */
   useEffect(() => {
-    if (state !== "life" && state !== "end") return;
-
     const interval = setInterval(() => {
       if (food.length === 0) return;
 
-      // ищем ближайшую еду
-      const nearest = food.reduce((a, b) => {
-        const da = Math.hypot(microbe.x - a.x, microbe.y - a.y);
-        const db = Math.hypot(microbe.x - b.x, microbe.y - b.y);
-        return da < db ? a : b;
+      setMicrobe((prev) => {
+        let { x, y } = prev;
+
+        const nearest = food.reduce((a, b) => {
+          const da = Math.hypot(x - a.x, y - a.y);
+          const db = Math.hypot(x - b.x, y - b.y);
+          return da < db ? a : b;
+        });
+
+        const angle = Math.atan2(nearest.y - y, nearest.x - x);
+        const t = Date.now() / 300;
+        const curve = Math.sin(t) * 0.5;
+        const curveAngle = angle + curve;
+
+        x += Math.cos(curveAngle) * MOVE_SPEED;
+        y += Math.sin(curveAngle) * MOVE_SPEED;
+
+        // Поедание
+        if (Math.hypot(x - nearest.x, y - nearest.y) < EAT_RADIUS && !nearest.eaten) {
+          nearest.eaten = true; // ✅ защита от повторного срабатывания
+          setFood((prevFood) => prevFood.filter((f) => f.id !== nearest.id));
+          setScore((s) => s + 1);
+          playSound("/sound/hroom.mp3");
+
+          if (phrases.length > 0) {
+            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+            const bubbleId = `${Date.now()}-${Math.random()}`;
+
+            // случайное размещение вокруг микроба
+            let offsetX, offsetY;
+            const radius = 40;
+            let tries = 0;
+            do {
+              const a = Math.random() * 2 * Math.PI;
+              offsetX = Math.cos(a) * radius;
+              offsetY = Math.sin(a) * radius - 20;
+              tries++;
+            } while (
+              bubbles.some(
+                (b) =>
+                  Math.hypot(b.offsetX - offsetX, b.offsetY - offsetY) < 40
+              ) &&
+              tries < 10
+            );
+
+            setBubbles((prev) => [
+              ...prev,
+              { id: bubbleId, text: phrase, offsetX, offsetY },
+            ]);
+            setTimeout(() => {
+              setBubbles((prev) => prev.filter((b) => b.id !== bubbleId));
+            }, 2000);
+          }
+        }
+
+        return { x, y };
       });
-
-      let { x, y } = microbe;
-      const speed = Math.max(1, 4 - microbe.size / 20);
-
-      if (x < nearest.x) x += speed;
-      if (x > nearest.x) x -= speed;
-      if (y < nearest.y) y += speed;
-      if (y > nearest.y) y -= speed;
-
-      // радиус поедания (тело + щупальца)
-      const eatRadius = microbe.size / 2 + microbe.size;
-      if (Math.hypot(x - nearest.x, y - nearest.y) < eatRadius) {
-        setFood((prev) => prev.filter((f) => f.id !== nearest.id));
-        setScore((s) => s + 1);
-        new Audio("/sound/hroom.mp3").play();
-      }
-
-      setMicrobe((m) => ({ ...m, x, y }));
-    }, 30);
+    }, 60);
 
     return () => clearInterval(interval);
-  }, [food, microbe, state]);
+  }, [food, phrases, bubbles]);
 
-  // Рост и смерть
-  useEffect(() => {
-    if (state !== "life") return;
-
-    const stage = GROWTH_STAGES.find((s) => s.score === score);
-    if (stage) {
-      setMicrobe((m) => ({
-        ...m,
-        size: stage.size,
-        tentacleAnim: stage.tentacle,
-      }));
-    }
-
-    if (score >= 500) {
-      setState("death");
-      setTimeout(() => setState("end"), 2000);
-    }
-  }, [score, state]);
-
-  // Новый цикл после END
-  useEffect(() => {
-    if (state === "end" && food.length === 0) {
-      setTimeout(() => {
-        setMicrobe({
-          x: 150,
-          y: 100,
-          size: 10,
-          color: COLORS[Math.floor(Math.random() * COLORS.length)],
-          tentacleAnim: "tentaclesSmall",
-        });
-        setScore(0);
-        setState("life");
-      }, 3000);
-    }
-  }, [state, food]);
+  if (!done) return <Loader done={done} />;
 
   return (
     <div
@@ -118,19 +160,17 @@ export default function MicrobeGame() {
       onClick={handleClick}
     >
       {/* Счёт */}
-      {state === "life" && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-xl backdrop-blur-md bg-white/10 text-white text-lg font-bold shadow-md">
-          {score}
-        </div>
-      )}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-xl backdrop-blur-md bg-white/10 text-white text-lg font-bold shadow-md">
+        {score}
+      </div>
 
       {/* Назад */}
-      <button
-        className="absolute top-4 right-4 text-white text-2xl bg-white/10 backdrop-blur-md rounded-full px-3 py-1 hover:bg-white/20"
-        onClick={() => window.history.back()}
+      <Link
+        href="/"
+        className="absolute top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition"
       >
         ✕
-      </button>
+      </Link>
 
       {/* Еда */}
       {food.map((f) => (
@@ -143,7 +183,15 @@ export default function MicrobeGame() {
 
       {/* Взрывы */}
       {explosions.map((ex) => (
-        <div key={ex.id} className="absolute" style={{ left: ex.x, top: ex.y }}>
+        <div
+          key={ex.id}
+          className="absolute"
+          style={{
+            left: ex.x + CELL / 2,
+            top: ex.y + CELL / 2,
+            transform: "translate(-50%, -50%)",
+          }}
+        >
           <div className="absolute w-[2px] h-[2px] bg-white animate-pixel1" />
           <div className="absolute w-[2px] h-[2px] bg-white animate-pixel2" />
           <div className="absolute w-[2px] h-[2px] bg-white animate-pixel3" />
@@ -152,103 +200,53 @@ export default function MicrobeGame() {
       ))}
 
       {/* Микроб */}
-      {state === "life" && (
-        <div
-          className={`absolute microbe ${microbe.tentacleAnim}`}
-          style={{
-            left: microbe.x,
-            top: microbe.y,
-            width: microbe.size,
-            height: microbe.size,
-            background: microbe.color,
-            "--c": microbe.color,
-          }}
-        />
-      )}
+      <div
+        className="absolute"
+        style={{
+          left: microbe.x,
+          top: microbe.y,
+          transform: "translate(-50%, -50%)",
+          width: 64,
+          height: 64,
+        }}
+      >
+        <img src={frames[frame]} alt="microbe" className="w-full h-full" />
+        {bubbles.map((b) => (
+          <div
+            key={b.id}
+            className="absolute text-white font-bold animate-fadeUp"
+            style={{
+              left: `calc(50% + ${b.offsetX}px)`,
+              top: `calc(50% + ${b.offsetY}px)`,
+              transform: "translate(-50%, -50%)",
+              whiteSpace: "nowrap",
+              maxWidth: "200px",
+            }}
+          >
+            {b.text}
+          </div>
+        ))}
+      </div>
 
-      {/* Убийца */}
-      {state === "death" && (
-        <div
-          className="absolute killer"
-          style={{
-            left: microbe.x + 40,
-            top: microbe.y,
-            width: microbe.size,
-            height: microbe.size,
-            background: "red",
-          }}
-        />
-      )}
-
-      {/* END */}
-      {state === "end" && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-bold text-6xl flex gap-4">
-          <span>E</span>
-          <span>N</span>
-          <span className="relative">
-            D
-            <div
-              className="absolute w-4 h-4 bg-yellow-400 animate-microbe"
-              style={{ left: "50%", top: "30%" }}
-            />
-          </span>
-        </div>
-      )}
+      {/* Футер */}
+      <FooterLink />
 
       <style jsx>{`
-        .microbe {
-          position: absolute;
+        @keyframes fadeUp {
+          0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          80% { opacity: 1; transform: translate(-50%, -70%) scale(1.05); }
+          100% { opacity: 0; transform: translate(-50%, -90%) scale(1.1); }
         }
-        /* разные стили щупалец */
-        .tentaclesSmall {
-          animation: tentaclesSmall 0.8s steps(2) infinite alternate;
-        }
-        .tentaclesChip {
-          animation: tentaclesChip 0.8s steps(2) infinite alternate;
-        }
-        .tentaclesAngle {
-          animation: tentaclesAngle 0.8s steps(2) infinite alternate;
-        }
-        .tentaclesSpider {
-          animation: tentaclesSpider 0.8s steps(2) infinite alternate;
-        }
-        .tentaclesCrazy {
-          animation: tentaclesCrazy 0.8s steps(2) infinite alternate;
-        }
+        .animate-fadeUp { animation: fadeUp 2s ease-out forwards; }
 
-        @keyframes tentaclesSmall {
-          0% { box-shadow: -15px 0 var(--c), 15px 0 var(--c), 0 -15px var(--c), 0 15px var(--c); }
-          100% { box-shadow: -16px 0 var(--c), 16px 0 var(--c), 0 -16px var(--c), 0 16px var(--c); }
-        }
-        @keyframes tentaclesChip {
-          0% { box-shadow: -20px 0 var(--c), 20px 0 var(--c), 0 -20px var(--c), 0 20px var(--c); }
-          100% { box-shadow: -22px 0 var(--c), 22px 0 var(--c), 0 -22px var(--c), 0 22px var(--c); }
-        }
-        @keyframes tentaclesAngle {
-          0% { box-shadow: -20px -5px var(--c), 20px -5px var(--c), -5px -20px var(--c), -5px 20px var(--c); }
-          100% { box-shadow: -22px -8px var(--c), 22px -8px var(--c), -8px -22px var(--c), -8px 22px var(--c); }
-        }
-        @keyframes tentaclesSpider {
-          0% { box-shadow: -25px 0 var(--c), 25px 0 var(--c), 0 -25px var(--c), 0 25px var(--c); }
-          100% { box-shadow: -26px -4px var(--c), 26px 4px var(--c), -4px -26px var(--c), 4px 26px var(--c); }
-        }
-        @keyframes tentaclesCrazy {
-          0% { box-shadow: -30px -5px var(--c), 30px 5px var(--c), -5px -30px var(--c), 5px 30px var(--c); }
-          100% { box-shadow: -32px 0 var(--c), 32px 0 var(--c), 0 -32px var(--c), 0 32px var(--c); }
-        }
-
-        @keyframes pixel1 { from { transform: translate(0,0); opacity:1; } to { transform: translate(-12px,-12px); opacity:0; } }
-        @keyframes pixel2 { from { transform: translate(0,0); opacity:1; } to { transform: translate(12px,-12px); opacity:0; } }
-        @keyframes pixel3 { from { transform: translate(0,0); opacity:1; } to { transform: translate(-12px,12px); opacity:0; } }
-        @keyframes pixel4 { from { transform: translate(0,0); opacity:1; } to { transform: translate(12px,12px); opacity:0; } }
+        @keyframes pixel1 { from { transform: translate(0,0); opacity:1; } to { transform: translate(0,-12px); opacity:0; } }
+        @keyframes pixel2 { from { transform: translate(0,0); opacity:1; } to { transform: translate(0,12px); opacity:0; } }
+        @keyframes pixel3 { from { transform: translate(0,0); opacity:1; } to { transform: translate(-12px,0); opacity:0; } }
+        @keyframes pixel4 { from { transform: translate(0,0); opacity:1; } to { transform: translate(12px,0); opacity:0; } }
         .animate-pixel1 { animation: pixel1 0.5s ease-out forwards; }
         .animate-pixel2 { animation: pixel2 0.5s ease-out forwards; }
         .animate-pixel3 { animation: pixel3 0.5s ease-out forwards; }
         .animate-pixel4 { animation: pixel4 0.5s ease-out forwards; }
-
-        .killer { animation: blink 0.3s infinite alternate; }
-        @keyframes blink { from { opacity: 1; } to { opacity: 0.3; } }
-        .animate-microbe { animation: tentaclesSmall 0.6s steps(2) infinite alternate; }
       `}</style>
     </div>
   );

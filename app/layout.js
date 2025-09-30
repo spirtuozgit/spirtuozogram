@@ -9,8 +9,8 @@ const rubik = Rubik({
 });
 
 export const metadata = {
-  title: "SPIRTUOZOGRAM",
-  description: "Минимальный стартовый проект",
+  title: "SPIRTUOZGRAM",
+  description: "Самая бесполезная информация на все случаи жизни",
 };
 
 export default function RootLayout({ children }) {

@@ -1,40 +1,34 @@
 "use client";
 import { useState } from "react";
+import FooterLink from "../../components/FooterLink"; // ✅ добавлен футер
 
 export default function PopPage() {
   const [clicks, setClicks] = useState(0);
   const [explosions, setExplosions] = useState([]);
   const [disabledBlocks, setDisabledBlocks] = useState(new Set());
 
-  // Размер блока
   const BLOCK_SIZE = 3;
 
   const handleClick = (e) => {
-    // Привязка к сетке
     const x = Math.floor(e.clientX / BLOCK_SIZE) * BLOCK_SIZE;
     const y = Math.floor(e.clientY / BLOCK_SIZE) * BLOCK_SIZE;
-
     const key = `${x},${y}`;
-    if (disabledBlocks.has(key)) return; // блок уже занят
+    if (disabledBlocks.has(key)) return;
 
-    // Добавляем в "сгоревшие"
     const newDisabled = new Set(disabledBlocks);
     newDisabled.add(key);
     setDisabledBlocks(newDisabled);
 
-    // Счётчик
     const text = Math.random() > 0.5 ? "тык" : "пык";
     setClicks((prev) => prev + 1);
 
     const id = Date.now();
     setExplosions((prev) => [...prev, { id, x, y, text }]);
 
-    // Удаляем анимацию через 1 сек
     setTimeout(() => {
       setExplosions((prev) => prev.filter((ex) => ex.id !== id));
     }, 1000);
 
-    // 🎵 Рандомный звук
     const sounds = ["/sound/pop_1.mp3", "/sound/pop_2.mp3", "/sound/pop_3.mp3"];
     const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
     new Audio(randomSound).play();
@@ -77,85 +71,33 @@ export default function PopPage() {
           className="absolute"
           style={{ left: ex.x + BLOCK_SIZE / 2, top: ex.y + BLOCK_SIZE / 2 }}
         >
-          {/* 4 пикселя разлетаются */}
           <div className="absolute w-[2px] h-[2px] bg-white animate-pixel1" />
           <div className="absolute w-[2px] h-[2px] bg-white animate-pixel2" />
           <div className="absolute w-[2px] h-[2px] bg-white animate-pixel3" />
           <div className="absolute w-[2px] h-[2px] bg-white animate-pixel4" />
-
-          {/* Текст */}
           <div className="text-white text-xl font-bold animate-fadeUp">{ex.text}</div>
         </div>
       ))}
 
+      {/* Футер */}
+      <FooterLink />
+
       {/* Анимации */}
       <style jsx>{`
         @keyframes fadeUp {
-          0% {
-            transform: translateY(0px);
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-30px);
-            opacity: 0;
-          }
+          0% { transform: translateY(0px); opacity: 1; }
+          100% { transform: translateY(-30px); opacity: 0; }
         }
-        .animate-fadeUp {
-          animation: fadeUp 1s ease-out forwards;
-        }
+        .animate-fadeUp { animation: fadeUp 1s ease-out forwards; }
 
-        @keyframes pixel1 {
-          from {
-            transform: translate(0, 0);
-            opacity: 1;
-          }
-          to {
-            transform: translate(-12px, -12px);
-            opacity: 0;
-          }
-        }
-        @keyframes pixel2 {
-          from {
-            transform: translate(0, 0);
-            opacity: 1;
-          }
-          to {
-            transform: translate(12px, -12px);
-            opacity: 0;
-          }
-        }
-        @keyframes pixel3 {
-          from {
-            transform: translate(0, 0);
-            opacity: 1;
-          }
-          to {
-            transform: translate(-12px, 12px);
-            opacity: 0;
-          }
-        }
-        @keyframes pixel4 {
-          from {
-            transform: translate(0, 0);
-            opacity: 1;
-          }
-          to {
-            transform: translate(12px, 12px);
-            opacity: 0;
-          }
-        }
-        .animate-pixel1 {
-          animation: pixel1 0.6s ease-out forwards;
-        }
-        .animate-pixel2 {
-          animation: pixel2 0.6s ease-out forwards;
-        }
-        .animate-pixel3 {
-          animation: pixel3 0.6s ease-out forwards;
-        }
-        .animate-pixel4 {
-          animation: pixel4 0.6s ease-out forwards;
-        }
+        @keyframes pixel1 { from { transform: translate(0,0); opacity:1; } to { transform: translate(-12px,-12px); opacity:0; } }
+        @keyframes pixel2 { from { transform: translate(0,0); opacity:1; } to { transform: translate(12px,-12px); opacity:0; } }
+        @keyframes pixel3 { from { transform: translate(0,0); opacity:1; } to { transform: translate(-12px,12px); opacity:0; } }
+        @keyframes pixel4 { from { transform: translate(0,0); opacity:1; } to { transform: translate(12px,12px); opacity:0; } }
+        .animate-pixel1 { animation: pixel1 0.6s ease-out forwards; }
+        .animate-pixel2 { animation: pixel2 0.6s ease-out forwards; }
+        .animate-pixel3 { animation: pixel3 0.6s ease-out forwards; }
+        .animate-pixel4 { animation: pixel4 0.6s ease-out forwards; }
       `}</style>
     </div>
   );

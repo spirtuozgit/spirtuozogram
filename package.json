@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.3.0",
     "chart.js": "^4.5.0",
     "chartjs-adapter-date-fns": "^3.0.0",
     "colorthief": "^2.6.0",
@@ -21,7 +23,9 @@
     "react-dom": "19.1.0",
     "react-leaflet": "^5.0.0",
     "react-zoom-pan-pinch": "^3.7.0",
-    "suncalc": "^1.9.0"
+    "satellite.js": "^6.0.1",
+    "suncalc": "^1.9.0",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
