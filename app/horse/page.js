@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
@@ -55,69 +55,10 @@ const playSfx = (list) => {
   } catch {}
 };
 
-/* === Edge === */
-function Edge({ fromId, toId, nodeRefs, containerRef }) {
-  const pathRef = useRef(null);
-  const [d, setD] = useState("M0 0 L0 0");
-
-  const recalc = () => {
-    const container = containerRef.current;
-    const fromEl = nodeRefs.current[fromId];
-    const toEl = nodeRefs.current[toId];
-    if (!container || !fromEl || !toEl) return;
-
-    const crect = container.getBoundingClientRect();
-    const a = fromEl.getBoundingClientRect();
-    const b = toEl.getBoundingClientRect();
-
-    const sx = a.left + a.width / 2 - crect.left;
-    const sy = a.bottom - crect.top;
-    const tx = b.left + b.width / 2 - crect.left;
-    const ty = b.top - crect.top;
-
-    const dx = (tx - sx) * 0.3;
-    const mid1x = sx + dx;
-    const mid2x = tx - dx;
-    setD(`M ${sx} ${sy} C ${mid1x} ${sy}, ${mid2x} ${ty}, ${tx} ${ty}`);
-  };
-
-  useLayoutEffect(() => {
-    recalc();
-    const ro = new ResizeObserver(recalc);
-    const fromEl = nodeRefs.current[fromId];
-    const toEl = nodeRefs.current[toId];
-    if (fromEl) ro.observe(fromEl);
-    if (toEl) ro.observe(toEl);
-    window.addEventListener("resize", recalc, { passive: true });
-    window.addEventListener("scroll", recalc, { passive: true });
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", recalc);
-      window.removeEventListener("scroll", recalc);
-    };
-  }, [fromId, toId]);
-
-  return (
-    <path
-      ref={pathRef}
-      d={d}
-      fill="none"
-      stroke="white"
-      strokeWidth="2"
-      vectorEffect="non-scaling-stroke"
-    />
-  );
-}
-
 export default function HorseTest() {
   const [activeNodes, setActiveNodes] = useState(["start"]);
-  const [connections, setConnections] = useState([]);
   const [chosen, setChosen] = useState({});
   const [selectedBtn, setSelectedBtn] = useState({});
-  const [offsets, setOffsets] = useState({});
-  const nodeRefs = useRef({});
-  const containerRef = useRef(null);
-
   const [horses, setHorses] = useState([]);
   const [frame, setFrame] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -195,7 +136,7 @@ export default function HorseTest() {
 
   useEffect(() => {
     const last = activeNodes[activeNodes.length - 1];
-    const el = nodeRefs.current[last];
+    const el = document.getElementById(last);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
@@ -208,27 +149,39 @@ export default function HorseTest() {
     setSelectedBtn((p) => ({ ...p, [from]: label }));
     setActiveNodes((p) => {
       if (!p.includes(to)) {
-        setOffsets((o) => ({ ...o, [to]: Math.floor(Math.random() * 200 - 100) }));
         return [...p, to];
       }
       return p;
     });
-    setConnections((p) => (p.find((c) => c.from === from && c.to === to) ? p : [...p, { from, to }]));
   };
 
   const restart = () => {
     playSfx(RESET_SOUNDS);
     setActiveNodes(["start"]);
-    setConnections([]);
     setChosen({});
     setSelectedBtn({});
-    setOffsets({});
   };
 
   if (!loaded) return <Loader done={loaded} />;
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center p-6 relative overflow-hidden">
+      <style jsx global>{`
+        @keyframes fadeDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .tile {
+          animation: fadeDown 0.6s ease forwards;
+        }
+      `}</style>
+
       {/* крестик */}
       <Link
         href="/"
@@ -267,48 +220,28 @@ export default function HorseTest() {
         </div>
       ))}
 
-      {/* Контейнер плиток */}
-      <div
-        ref={containerRef}
-        className="relative z-10 w-full max-w-3xl mx-auto pb-40 flex flex-col items-center gap-14 overflow-y-auto"
-        style={{ maxHeight: "calc(100vh - 160px)" }}
-      >
-        {/* Линии */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-          {connections.map((c, i) => (
-            <Edge
-              key={`${c.from}-${c.to}-${i}`}
-              fromId={c.from}
-              toId={c.to}
-              nodeRefs={nodeRefs}
-              containerRef={containerRef}
-            />
-          ))}
-        </svg>
-
-        {/* Плитки */}
+      {/* Плитки */}
+      <div className="relative z-10 w-full max-w-3xl mx-auto pb-40 flex flex-col items-center gap-14">
         {activeNodes.map((id) => {
           const node = NODES[id];
           if (!node) return null;
           const disabled = chosen[id];
           const isFinal = node.final;
-          const offset = offsets[id] || 0;
 
           return (
             <div
+              id={id}
               key={id}
-              ref={(el) => (nodeRefs.current[id] = el)}
-              className={`px-5 py-4 rounded-2xl border shadow-lg text-center transition backdrop-blur-md ${
+              className={`tile px-5 py-4 rounded-2xl border shadow-lg text-center backdrop-blur-md mx-auto max-w-sm ${
                 disabled ? "bg-green-600/30 border-green-400" : "bg-white/10 border-white/20"
               }`}
-              style={{ transform: `translateX(${offset}px)`, maxWidth: "520px" }}
             >
               <p className="mb-3">{node.text}</p>
               <div className="flex gap-2 flex-wrap justify-center">
                 {isFinal ? (
                   <button
                     onClick={restart}
-                    className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition"
+                    className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition whitespace-nowrap"
                   >
                     но можем перепроверить
                   </button>
@@ -320,7 +253,7 @@ export default function HorseTest() {
                         key={`${id}-${b.to}-${b.label}`}
                         onClick={() => addNode(id, b.to, b.label)}
                         disabled={disabled && !isSelected}
-                        className={`px-3 py-1.5 rounded-lg transition ${
+                        className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${
                           isSelected
                             ? "bg-white/30"
                             : disabled
@@ -342,14 +275,10 @@ export default function HorseTest() {
       {/* Футер */}
       <FooterLink />
 
-      {/* Модалка с глассморфизмом */}
+      {/* Модалка */}
       {showInfo && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div
-            className="relative max-w-2xl w-full p-6 rounded-2xl
-                       bg-white/20 backdrop-blur-xl border border-white/30
-                       shadow-2xl text-white"
-          >
+        <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start overflow-y-auto p-4">
+          <div className="relative max-w-2xl w-full mt-10 mb-10 p-6 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl text-white max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setShowInfo(false)}
               className="absolute top-3 right-3 text-xl font-bold text-white/80 hover:text-red-400"
