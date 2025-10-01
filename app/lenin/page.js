@@ -52,15 +52,17 @@ export default function LeninPage() {
         </TransformWrapper>
       </div>
 
-      {/* Мобилка */}
-      <div className="md:hidden flex-1 w-full pt-16 pb-6">
-        <img
-          src="/phone.jpg"
-          alt="Этапы жизни Ленина"
-          className="block w-[92%] mx-auto h-auto select-none shadow-2xl"
-          draggable={false}
-          onLoad={() => setLoaded(true)}
-        />
+      {/* Мобилка со скроллом */}
+      <div className="md:hidden flex-1 w-full pt-16 pb-6 overflow-auto">
+        <div className="w-[200%]"> {/* увеличиваем ширину для прокрутки */}
+          <img
+            src="/phone.jpg"
+            alt="Этапы жизни Ленина"
+            className="block w-full h-auto select-none shadow-2xl"
+            draggable={false}
+            onLoad={() => setLoaded(true)}
+          />
+        </div>
       </div>
 
       {/* Футер (фиксированный + safe-area) */}

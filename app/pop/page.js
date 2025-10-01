@@ -46,7 +46,7 @@ export default function PopPage() {
   const containerRef = useRef(null);
 
   const BLOCK_SIZE = 6;
-  const sounds = ["/sound/pop_1.mp3", "/sound/pop_2.mp3", "/sound/pop_3.mp3"];
+  const sounds = ["/sound/pop_1.ogg", "/sound/pop_2.ogg", "/sound/pop_3.ogg"];
   const colors = ["white", "red", "yellow", "lime", "cyan", "magenta", "orange"];
   const currentColor = colors[Math.floor(clicks / 50) % colors.length];
 

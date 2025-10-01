@@ -27,7 +27,7 @@ export default function MicrobeGame() {
   /* === Загрузка звуков и фраз === */
   useEffect(() => {
     const load = async () => {
-      const sounds = ["/sound/hroom.mp3"];
+      const sounds = ["/sound/hroom.ogg"];
       await Promise.all(sounds.map(preloadAudio));
 
       try {
@@ -102,7 +102,7 @@ export default function MicrobeGame() {
           setFood((prevFood) => prevFood.filter((f) => f.id !== nearest.id));
           setScore((s) => s + 1);
 
-          playAudio("/sound/hroom.mp3"); // ✅ теперь без задержки
+          playAudio("/sound/hroom.ogg"); // ✅ теперь без задержки
 
           if (phrases.length > 0) {
             const phrase = phrases[Math.floor(Math.random() * phrases.length)];

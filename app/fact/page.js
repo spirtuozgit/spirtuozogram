@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import FooterLink from "../../components/FooterLink";
 import Loader from "../../components/Loader";
+import { preloadAudio, playAudio } from "../../utils/audio"; // ✅ общий модуль
 
 function sleep(ms, signal) {
   return new Promise((resolve) => {
@@ -22,7 +23,7 @@ export default function FactPage() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const audioRef = useRef(null);
+  const audioRef = useRef(null); // теперь храним только путь
   const abortRef = useRef(null);
   const lastIndexRef = useRef(-1);
 
@@ -50,20 +51,17 @@ export default function FactPage() {
     }
   }, [facts]);
 
-  // подготовка звука
+  // предзагрузка звука
   useEffect(() => {
-    const a = new Audio("/sound/typewrite.mp3");
-    a.preload = "auto";
-    a.loop = true;
-    audioRef.current = a;
+    preloadAudio("/sound/typewrite.ogg").then(() => {
+      audioRef.current = "/sound/typewrite.ogg";
+    });
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-      }
+      audioRef.current = null;
     };
   }, []);
 
-  // печать
+  // печать текста
   useEffect(() => {
     if (!facts.length) return;
 
@@ -75,15 +73,12 @@ export default function FactPage() {
     setText("");
 
     const run = async () => {
+      // старт звука печати
       if (audioRef.current) {
-        try {
-          audioRef.current.currentTime = 0;
-          if (audioRef.current.paused) {
-            await audioRef.current.play();
-          }
-        } catch {}
+        await playAudio(audioRef.current);
       }
 
+      // печатаем по символам
       for (let i = 0; i < fact.length; i++) {
         if (controller.signal.aborted) return;
         setText((prev) => prev + fact.charAt(i));
@@ -94,13 +89,6 @@ export default function FactPage() {
         }
 
         await sleep(delay, controller.signal);
-      }
-
-      if (audioRef.current && !audioRef.current.paused) {
-        try {
-          audioRef.current.pause();
-          audioRef.current.currentTime = 0;
-        } catch {}
       }
 
       // пауза → новый факт
@@ -122,9 +110,6 @@ export default function FactPage() {
 
     return () => {
       controller.abort();
-      if (audioRef.current && !audioRef.current.paused) {
-        audioRef.current.pause();
-      }
     };
   }, [facts, currentIndex]);
 

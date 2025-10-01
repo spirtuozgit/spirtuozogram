@@ -5,7 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { playAudio } from "../../utils/audio";
+import { preloadAudio, playAudio } from "../../utils/audio"; // ✅ общий модуль
 
 // ---------- Утка ----------
 function Duck({ onQuack, rotationY }) {
@@ -27,14 +27,12 @@ export default function DuckPage() {
 
   // ---------- предзагрузка звука ----------
   useEffect(() => {
-    const a = new Audio("/sound/quack.mp3");
-    a.preload = "auto"; // только подгружаем, без play()
-    setReady(true);
+    preloadAudio("/sound/quack.ogg").then(() => setReady(true));
   }, []);
 
   // ---------- звук + надпись "Кря" ----------
   const handleQuack = (e) => {
-    playAudio("/sound/quack.mp3");
+    playAudio("/sound/quack.ogg");
     const point = e.point.clone();
     idCounter.current += 1;
     const id = idCounter.current;

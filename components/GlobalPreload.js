@@ -1,24 +1,36 @@
 "use client";
-
 import { useEffect } from "react";
-import { preloadAudio } from "../utils/audio";
+import { preloadAudio, getCtx } from "../utils/audio";
 
-// ✅ Все звуки из public/sound/
+// ✅ полный список всех звуков
 const sounds = [
-  "click.mp3",
-  "reset.mp3",
-  "hoof.mp3",
-  "quack.mp3",
-  "hroom.mp3",
-  "pop_1.mp3",
-  "pop_2.mp3",
-  "pop_3.mp3",
+  "/sound/click.ogg",
+  "/sound/reset.ogg",
+  "/sound/hoof.ogg",
+  "/sound/quack.ogg",
+  "/sound/hroom.ogg",
+  "/sound/pop_1.ogg",
+  "/sound/pop_2.ogg",
+  "/sound/pop_3.ogg",
+  "/sound/typewrite.ogg",
 ];
 
 export default function GlobalPreload() {
   useEffect(() => {
-    sounds.forEach((file) => preloadAudio(`/sound/${file}`));
+    // Предзагрузка всех звуков
+    sounds.forEach((file) => preloadAudio(file));
+
+    // 🔓 Разблокировка основного AudioContext
+    const unlock = () => {
+      const ctx = getCtx();
+      if (ctx.state === "suspended") ctx.resume();
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("touchstart", unlock);
+    };
+
+    window.addEventListener("click", unlock);
+    window.addEventListener("touchstart", unlock);
   }, []);
 
-  return null; // ничего не рендерим
+  return null;
 }

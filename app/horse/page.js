@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { playAudio } from "../../utils/audio"; // ✅ используем общий модуль
+import { playAudio, preloadAudio, playLoop } from "../../utils/audio"; // ✅ общий модуль
 
 /* === ДАННЫЕ ТЕСТА === */
 const NODES = {
@@ -46,8 +46,8 @@ const BASE_MOVE_SPEED = 3;
 const HORSE_COUNT = 3;
 
 /* === ЗВУКИ === */
-const CLICK_SOUNDS = ["/sound/click.mp3"];
-const RESET_SOUNDS = ["/sound/reset.mp3"];
+const CLICK_SOUNDS = ["/sound/click.ogg"];
+const RESET_SOUNDS = ["/sound/reset.ogg"];
 const playSfx = (list) => {
   const src = list[Math.floor(Math.random() * list.length)];
   playAudio(src);
@@ -64,7 +64,7 @@ export default function HorseTest() {
   const hoofAudioRef = useRef(null);
   const [showInfo, setShowInfo] = useState(false);
 
-  /* === Loader === */
+  /* === Loader + предзагрузка === */
   useEffect(() => {
     const img1 = new Image();
     const img2 = new Image();
@@ -88,17 +88,16 @@ export default function HorseTest() {
     img1.src = HORSE_FRAMES[0];
     img2.src = HORSE_FRAMES[1];
 
-    hoofAudioRef.current = new Audio("/sound/hoof.mp3");
-    hoofAudioRef.current.loop = true;
-    hoofAudioRef.current.volume = 0.6;
-    hoofAudioRef.current.play().catch(() => {});
+    // ✅ звук топота теперь через Web Audio API
+    preloadAudio("/sound/hoof.ogg").then(() => {
+      hoofAudioRef.current = playLoop("/sound/hoof.ogg", 0.6);
+    });
 
     return () => {
-      if (hoofAudioRef.current) {
-        hoofAudioRef.current.pause();
-        hoofAudioRef.current.src = "";
-        hoofAudioRef.current = null;
+      if (hoofAudioRef.current?.source) {
+        hoofAudioRef.current.source.stop();
       }
+      hoofAudioRef.current = null;
     };
   }, []);
 
@@ -185,7 +184,7 @@ export default function HorseTest() {
         }
       `}</style>
 
-      {/* крестик (фиксированный) */}
+      {/* крестик */}
       <Link
         href="/"
         className="fixed top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition z-40"
@@ -275,12 +274,12 @@ export default function HorseTest() {
         })}
       </div>
 
-      {/* Футер (фиксированный, ниже модалки) */}
+      {/* Футер */}
       <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
         <FooterLink />
       </div>
 
-      {/* Модалка (остается выше футера и крестика) */}
+      {/* Модалка */}
       {showInfo && (
         <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start overflow-y-auto p-4">
           <div className="relative max-w-2xl w-full mt-10 mb-10 p-6 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl text-white max-h-[90vh] overflow-y-auto">
