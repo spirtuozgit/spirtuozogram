@@ -1,118 +1,101 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import FooterLink from "../../components/FooterLink";
 import Loader from "../../components/Loader";
-import FooterLink from "../../components/FooterLink"; // ✅ футер
 
-// карту подгружаем только на клиенте
 const ISSMap = dynamic(() => import("../../components/ISSMap"), { ssr: false });
 
 export default function ISSPage() {
   const [issData, setIssData] = useState(null);
-  const [location, setLocation] = useState(null);
   const [crew, setCrew] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCrew, setShowCrew] = useState(false);
 
-  async function fetchLocation(lat, lon) {
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=5&addressdetails=1`,
-        { headers: { "User-Agent": "ISS-Tracker" } }
-      );
-      const data = await res.json();
-      return data.address || null;
-    } catch {
-      return null;
-    }
-  }
-
-  function formatOver(loc) {
-    if (!loc) return "над океаном";
-    if (loc.city && loc.country) return `${loc.city}, ${loc.country}`;
-    if (loc.state && loc.country) return `${loc.state}, ${loc.country}`;
-    if (loc.country) return loc.country;
-    return "над океаном";
-  }
-
+  // загрузка данных
   useEffect(() => {
-    let interval;
-
-    const loadAll = async () => {
+    async function fetchData() {
       try {
         const res = await fetch("https://api.wheretheiss.at/v1/satellites/25544");
         const data = await res.json();
         setIssData(data);
 
-        const locData = await fetchLocation(data.latitude, data.longitude);
-        setLocation(locData);
-
-        const crewRes = await fetch("http://api.open-notify.org/astros.json");
-        const crewData = await crewRes.json();
-        const issCrew = crewData.people.filter((p) => p.craft === "ISS");
-        setCrew(issCrew);
-
-        setLoading(false);
-
-        interval = setInterval(async () => {
-          try {
-            const res = await fetch("https://api.wheretheiss.at/v1/satellites/25544");
-            const data = await res.json();
-            setIssData(data);
-
-            const locData = await fetchLocation(data.latitude, data.longitude);
-            setLocation(locData);
-
-            const crewRes = await fetch("http://api.open-notify.org/astros.json");
-            const crewData = await crewRes.json();
-            const issCrew = crewData.people.filter((p) => p.craft === "ISS");
-            setCrew(issCrew);
-          } catch (err) {
-            console.error("Ошибка обновления ISS:", err);
-          }
-        }, 3000);
+        // экипаж через open-notify (HTTP)
+        try {
+          const crewRes = await fetch("http://api.open-notify.org/astros.json");
+          const crewData = await crewRes.json();
+          setCrew(crewData.people || []);
+        } catch (err) {
+          console.error("Ошибка загрузки космонавтов:", err);
+          setCrew([]);
+        }
       } catch (err) {
-        console.error("Ошибка первой загрузки ISS:", err);
+        console.error("Ошибка загрузки данных:", err);
+      } finally {
         setLoading(false);
       }
-    };
+    }
 
-    loadAll();
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <div className="bg-black text-white min-h-screen px-6 py-8 flex flex-col items-center gap-8 relative pb-16">
-      {loading && <Loader text="Сканируем космос, ищем МКС…" />}
+  const formatOver = (loc) => {
+    if (!loc) return "—";
+    return loc;
+  };
 
-      {/* крестик назад */}
-      <Link
-        href="/"
-        className="absolute top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition"
+  if (loading) {
+    return <Loader text="Сканируем космос, ищем МКС…" />;
+  }
+
+  return (
+    <div className="relative w-full min-h-screen bg-black text-white flex flex-col items-center px-4 pt-6 pb-[env(safe-area-inset-bottom)]">
+      {/* крестик */}
+      <button
+        onClick={() => window.history.back()}
+        className="fixed top-4 right-4 text-3xl text-white z-50"
       >
         ✕
-      </Link>
+      </button>
 
-      <h1 className="text-4xl font-semibold">🌌 Международная космическая станция</h1>
+      {/* Заголовок */}
+      <h1 className="text-2xl font-semibold mb-4 text-center">
+        МКС на карте
+      </h1>
 
+      {/* Данные */}
       {issData && (
-        <div className="text-center space-y-1 text-gray-200">
-          <div>Широта: {issData.latitude.toFixed(4)}°</div>
-          <div>Долгота: {issData.longitude.toFixed(4)}°</div>
+        <div className="grid grid-cols-2 gap-2 text-gray-200 text-sm sm:text-base text-center mb-4">
+          <div>Широта: {issData.latitude.toFixed(2)}°</div>
+          <div>Долгота: {issData.longitude.toFixed(2)}°</div>
           <div>Скорость: {Math.round(issData.velocity)} км/ч</div>
-          <div>Пролетаем: {formatOver(location)}</div>
+          <div>Пролетаем: {formatOver(issData.location)}</div>
         </div>
       )}
 
-      {!loading && (
-        <div className="w-full max-w-5xl h-[60vh] sm:h-[420px] rounded-2xl overflow-hidden shadow-lg relative">
-          <ISSMap issData={issData} crew={crew} />
-        </div>
-      )}
+      {/* Карта */}
+      <div className="w-full max-w-5xl h-[30vh] sm:h-[320px] rounded-2xl overflow-hidden shadow-lg relative mb-4">
+        <ISSMap issData={issData} crew={crew} />
+      </div>
 
-      {!loading && (
+      {/* Кнопка экипажа */}
+      <button
+        onClick={() => setShowCrew(true)}
+        className="mb-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm"
+      >
+        Сколько всего людей сейчас в космосе
+      </button>
+
+      {/* YouTube с дисклеймером */}
+      <div className="w-full max-w-5xl space-y-2 mb-6">
+        <p className="text-xs text-gray-400 text-center">
+          в случае потери связи со станцией возможен показ предыдущих записей
+        </p>
         <div
-          className="w-full max-w-5xl rounded-2xl overflow-hidden shadow-xl"
+          className="rounded-2xl overflow-hidden shadow-xl"
           style={{ aspectRatio: "16/9" }}
         >
           <iframe
@@ -122,14 +105,42 @@ export default function ISSPage() {
             frameBorder="0"
             allow="autoplay; encrypted-media; accelerometer; gyroscope; picture-in-picture"
             allowFullScreen
+            onError={(e) => {
+              e.target.parentNode.innerHTML =
+                '<div class="flex items-center justify-center w-full h-full text-white text-center text-sm">Видео недоступно</div>';
+            }}
           />
         </div>
-      )}
-
-      {/* фиксированный футер */}
-      <div className="fixed bottom-0 left-0 w-full bg-black/80 backdrop-blur-md">
-        <FooterLink />
       </div>
+
+      {/* Футер */}
+      <FooterLink />
+
+      {/* Модалка с экипажем поверх всего */}
+      {showCrew && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-md">
+          <div className="bg-gray-900 rounded-xl p-6 max-w-sm w-full text-white relative">
+            <button
+              onClick={() => setShowCrew(false)}
+              className="absolute top-2 right-3 text-2xl hover:text-red-400"
+            >
+              ✕
+            </button>
+            <h1 className="text-lg font-semibold mb-4 text-left">Сейчас в космосе:</h1>
+            <ul className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+              {crew.length > 0 ? (
+                crew.map((person, i) => (
+                  <li key={i} className="border-b border-white/20 pb-1">
+                    {person.name} ({person.craft})
+                  </li>
+                ))
+              ) : (
+                <li className="text-gray-400">Нет данных об экипаже</li>
+              )}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

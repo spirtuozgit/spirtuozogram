@@ -18,12 +18,19 @@ html, body {
   color: #fff;
   font-family: "Rubik", sans-serif;
   overflow-x: hidden;
+  overflow-y: hidden; /* ✅ убираем вертикальную прокрутку */
 }
 
 /* запрет выделения и перетаскивания */
 * {
   user-select: none;
   -webkit-user-drag: none;
+}
+
+/* ---------- Высота экрана для iOS Safari ---------- */
+.h-dvh {
+  height: 100dvh;  /* ✅ учитывает динамические бары Safari */
+  height: 100svh;  /* ✅ поддержка старых версий */
 }
 
 /* ---------- Анимации ---------- */

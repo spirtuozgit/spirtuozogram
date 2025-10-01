@@ -3,24 +3,22 @@
 import { useEffect } from "react";
 import { preloadAudio } from "../utils/audio";
 
+// ✅ Все звуки из public/sound/
 const sounds = [
-  "/sound/click.mp3",
-  "/sound/reset.mp3",
-  "/sound/hoof.mp3",
-  "/sound/quack.mp3",
-  "/sound/hroom.mp3",
-  "/sound/pop_1.mp3",
-  "/sound/pop_2.mp3",
-  "/sound/pop_3.mp3",
+  "click.mp3",
+  "reset.mp3",
+  "hoof.mp3",
+  "quack.mp3",
+  "hroom.mp3",
+  "pop_1.mp3",
+  "pop_2.mp3",
+  "pop_3.mp3",
 ];
 
 export default function GlobalPreload() {
   useEffect(() => {
-    sounds.forEach((s) => preloadAudio(s));
+    sounds.forEach((file) => preloadAudio(`/sound/${file}`));
   }, []);
 
-  return null; // компонент ничего не рендерит
+  return null; // ничего не рендерим
 }
-
-
-

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import FooterLink from "../../components/FooterLink";
-import Loader from "../../components/Loader"; // 👈 добавили наш Loader
+import Loader from "../../components/Loader";
 
 function sleep(ms, signal) {
   return new Promise((resolve) => {
@@ -128,7 +128,6 @@ export default function FactPage() {
     };
   }, [facts, currentIndex]);
 
-  // ✅ показываем наш Loader, пока факты не загружены
   if (loading) {
     return <Loader text="Загружаем факты…" />;
   }
@@ -138,19 +137,21 @@ export default function FactPage() {
       {/* крестик */}
       <button
         onClick={() => window.history.back()}
-        className="absolute top-4 right-4 text-3xl text-white"
+        className="fixed top-4 right-4 text-3xl text-white z-50"
       >
         ✕
       </button>
 
-      {/* текст */}
-      <div className="max-w-4xl px-6 text-center text-2xl sm:text-3xl md:text-4xl leading-relaxed">
+      {/* текст (поднят чуть выше центра) */}
+      <div className="max-w-4xl px-6 text-center text-2xl sm:text-3xl md:text-4xl leading-relaxed -translate-y-12">
         <span className="whitespace-pre-line break-words">{text}</span>
         <span className="inline-block w-2 h-6 bg-green-400 ml-1 animate-pulse align-baseline" />
       </div>
 
       {/* футер */}
-      <FooterLink />
+      <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
+        <FooterLink />
+      </div>
     </div>
   );
 }

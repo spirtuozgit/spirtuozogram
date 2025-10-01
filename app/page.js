@@ -9,7 +9,7 @@ const tiles = [
   { href: "/horse", label: "Я лошадь?", icon: "/icons/horse_icon.png" },
   { href: "/pop", label: "Тык", icon: "/icons/pop_icon.png" },
   { href: "/duck", label: "Крутить уточку", icon: "/icons/duck_icon.png" },
-  { href: "/microbe", label: "Некультурный микроб", icon: "/icons/microbe_icon.png" },
+  { href: "/microbe", label: "Микроб матершинник", icon: "/icons/microbe_icon.png" },
   { href: "/lenin", label: "Этапы Ленина", icon: "/icons/lenin_icon.png" },
   { href: "/iss", label: "Где МКС?", icon: "/icons/iss_icon.png" },
   { href: "/fact", label: "Факты", icon: "/icons/fact_icon.png" },
@@ -19,7 +19,7 @@ const tiles = [
 
 function Tile({ tile }) {
   return (
-    <Link href={tile.href} className="flex flex-col items-center group">
+    <Link href={tile.href} className="flex flex-col items-center group w-20">
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center 
                    shadow-md border border-white/20 overflow-hidden transition-transform 
@@ -33,7 +33,9 @@ function Tile({ tile }) {
           className="w-[90%] h-[90%] object-contain"
         />
       </div>
-      <span className="mt-2 text-sm text-gray-200 group-hover:text-white text-center">
+      <span
+        className="mt-2 text-sm text-gray-200 group-hover:text-white text-center leading-tight break-words"
+      >
         {tile.label}
       </span>
     </Link>
@@ -44,8 +46,7 @@ function AgeCheck({ onYes, onNo }) {
   const [logoError, setLogoError] = useState(false);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white text-center p-6">
-      {/* Лого или fallback */}
+    <div className="flex flex-col items-center justify-center h-dvh bg-black text-white text-center p-6">
       {!logoError ? (
         <>
           <Image
@@ -57,11 +58,15 @@ function AgeCheck({ onYes, onNo }) {
             priority
             onError={() => setLogoError(true)}
           />
-          <p className="text-sm text-gray-400 mb-8">spirtuoz.ru</p>
+          <p className="text-sm text-gray-400">spirtuoz.ru</p>
         </>
       ) : (
-        <h1 className="text-3xl font-bold mb-8">spirtuoz.ru</h1>
+        <h1 className="text-3xl font-bold mb-2">spirtuoz.ru</h1>
       )}
+
+      <p className="mt-6 mb-6 text-gray-300 text-base">
+        Ещё не готово, но уже можно посмотреть
+      </p>
 
       <h2 className="text-2xl mb-6">Вам есть 18 лет?</h2>
       <div className="flex gap-6">
@@ -87,7 +92,6 @@ export default function HomePage() {
   const [isAdult, setIsAdult] = useState(null);
   const router = useRouter();
 
-  // проверка при загрузке
   useEffect(() => {
     const stored = sessionStorage.getItem("isAdult");
     if (stored !== null) {
@@ -108,7 +112,7 @@ export default function HomePage() {
           setIsAdult(false);
           setAgeChecked(true);
           sessionStorage.setItem("isAdult", "false");
-          router.push("/kids"); // редирект на детскую страницу
+          router.push("/kids");
         }}
       />
     );
@@ -116,22 +120,22 @@ export default function HomePage() {
 
   if (isAdult === false) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black text-white">
+      <div className="flex items-center justify-center h-dvh bg-black text-white">
         Переход...
       </div>
     );
   }
 
   return (
-    <main className="homepage relative flex flex-col items-center justify-between min-h-screen text-white px-6 py-8 overflow-hidden">
+    <main className="homepage relative h-dvh w-screen bg-black text-white flex flex-col items-center">
       {/* Лого + подпись */}
-      <div className="flex flex-col items-center mt-10 mb-10 z-10">
+      <div className="flex flex-col items-center mt-6 mb-6 z-10">
         <Image
           src="/logo_small.png"
           alt="SPIRTUOZGRAM logo"
           width={400}
           height={120}
-          className="w-[400px] h-auto mb-1"
+          className="w-[300px] sm:w-[400px] h-auto mb-1"
           priority
         />
         <p className="text-sm text-gray-400 leading-tight">
@@ -142,11 +146,11 @@ export default function HomePage() {
       {/* Плитки */}
       <div
         className="relative z-10 w-fit mx-auto px-4 py-6 
-                      rounded-3xl 
-                      bg-gradient-to-r from-white/10 to-white/5 
-                      backdrop-blur-xl 
-                      border border-white/20 
-                      shadow-[0_8px_32px_rgba(0,0,0,0.37)]"
+                   rounded-3xl 
+                   bg-gradient-to-r from-white/10 to-white/5 
+                   backdrop-blur-xl 
+                   border border-white/20 
+                   shadow-[0_8px_32px_rgba(0,0,0,0.37)]"
       >
         <div className="grid grid-cols-3 gap-3 sm:gap-4">
           {tiles.map((tile, i) => (
@@ -155,8 +159,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Футтер */}
-      <footer className="z-10 text-gray-500 text-sm mb-4 mt-8">
+      {/* Футер сразу под плитками */}
+      <div className="mt-6 z-10 text-center text-gray-500 text-sm">
         <a
           href="https://t.me/dimaspirtuoz"
           target="_blank"
@@ -165,7 +169,7 @@ export default function HomePage() {
         >
           t.me/dimaspirtuoz
         </a>
-      </footer>
+      </div>
     </main>
   );
 }

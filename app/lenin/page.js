@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import FooterLink from "../../components/FooterLink";
-import Loader from "../../components/Loader"; // 👈 добавили
+import Loader from "../../components/Loader";
 
 export default function LeninPage() {
   const [loaded, setLoaded] = useState(false);
 
   return (
     <main className="bg-black min-h-screen relative flex flex-col">
-      {!loaded && <Loader text="Загружаем Ленина…" />} {/* 👈 лоадер пока нет картинок */}
+      {!loaded && <Loader text="Загружаем Ленина…" />}
 
-      {/* Кнопка назад */}
+      {/* Кнопка назад (фиксированная) */}
       <button
         aria-label="Назад"
         onClick={() => window.history.back()}
@@ -46,7 +46,7 @@ export default function LeninPage() {
               alt="Этапы жизни Ленина"
               className="block max-w-full max-h-full mx-auto select-none"
               draggable={false}
-              onLoad={() => setLoaded(true)} // 👈 снимаем лоадер после загрузки
+              onLoad={() => setLoaded(true)}
             />
           </TransformComponent>
         </TransformWrapper>
@@ -59,12 +59,14 @@ export default function LeninPage() {
           alt="Этапы жизни Ленина"
           className="block w-[92%] mx-auto h-auto select-none shadow-2xl"
           draggable={false}
-          onLoad={() => setLoaded(true)} // 👈 снимаем лоадер
+          onLoad={() => setLoaded(true)}
         />
       </div>
 
-      {/* фиксированный футер */}
-      <FooterLink />
+      {/* Футер (фиксированный + safe-area) */}
+      <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-50">
+        <FooterLink />
+      </div>
     </main>
   );
 }

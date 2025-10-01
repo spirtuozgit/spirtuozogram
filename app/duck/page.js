@@ -5,18 +5,15 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { preloadAudio, playAudio } from "../../utils/audio";
+import { playAudio } from "../../utils/audio";
 
 // ---------- Утка ----------
 function Duck({ onQuack, rotationY }) {
   const { scene } = useGLTF("/models/duck.glb");
   return (
-    <primitive
-      object={scene}
-      scale={1}
-      rotation={[0, rotationY, 0]}
-      onPointerDown={onQuack}
-    />
+    <group position={[0, 0, 0]} rotation={[0, rotationY, 0]} scale={1}>
+      <primitive object={scene} onPointerDown={onQuack} />
+    </group>
   );
 }
 useGLTF.preload("/models/duck.glb");
@@ -28,16 +25,14 @@ export default function DuckPage() {
   const [quacks, setQuacks] = useState([]);
   const idCounter = useRef(0);
 
-  // ---------- загрузка звука ----------
+  // ---------- предзагрузка звука ----------
   useEffect(() => {
-    const boot = async () => {
-      await preloadAudio("/sound/quack.mp3");
-      setReady(true);
-    };
-    boot();
+    const a = new Audio("/sound/quack.mp3");
+    a.preload = "auto"; // только подгружаем, без play()
+    setReady(true);
   }, []);
 
-  // ---------- звук + текст ----------
+  // ---------- звук + надпись "Кря" ----------
   const handleQuack = (e) => {
     playAudio("/sound/quack.mp3");
     const point = e.point.clone();
@@ -54,28 +49,30 @@ export default function DuckPage() {
   if (!ready) return <Loader text="Загрузка уточки…" />;
 
   return (
-    <div className="relative w-screen h-screen bg-black select-none">
-      {/* Кнопка назад */}
+    <div className="relative w-screen h-dvh bg-black select-none flex items-center justify-center">
+      {/* Кнопка назад (фиксированная) */}
       <Link
         href="/"
-        className="absolute top-4 right-6 z-50 text-white text-2xl font-bold hover:text-red-400 transition"
+        className="fixed top-4 right-6 z-50 text-white text-2xl font-bold hover:text-red-400 transition"
       >
         ✕
       </Link>
 
-      {/* 3D сцена */}
-      <Canvas camera={{ position: [0, 0, 3], fov: 50, near: 0.1, far: 100 }}>
+      {/* 3D сцена по центру */}
+      <Canvas
+        camera={{ position: [0, 0, 3], fov: 50, near: 0.1, far: 100 }}
+        style={{ width: "100%", height: "100%" }}
+      >
         <ambientLight intensity={0.8} />
         <directionalLight position={[5, 8, 5]} intensity={1} />
 
         <OrbitControls
-          enableZoom={true}     // ✅ включаем нативный зум
+          enableZoom
           enablePan={false}
-          rotateSpeed={1}
           enableDamping
           dampingFactor={0.08}
-          minDistance={1}       // ✅ ограничение минимального зума
-          maxDistance={6}       // ✅ ограничение максимального зума
+          minDistance={1}
+          maxDistance={6}
         />
 
         <Duck onQuack={handleQuack} rotationY={rotationY} />
@@ -95,8 +92,10 @@ export default function DuckPage() {
         ))}
       </Canvas>
 
-      {/* футер */}
-      <FooterLink />
+      {/* Футер (фиксированный, с safe-area) */}
+      <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
+        <FooterLink />
+      </div>
 
       <style jsx global>{`
         .quack-text {

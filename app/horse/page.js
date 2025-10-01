@@ -145,7 +145,7 @@ export default function HorseTest() {
 
   /* === Добавление узла === */
   const addNode = (from, to, label) => {
-    playSfx(CLICK_SOUNDS); // ✅ теперь без задержки
+    playSfx(CLICK_SOUNDS);
     if (chosen[from]) return;
     setChosen((p) => ({ ...p, [from]: true }));
     setSelectedBtn((p) => ({ ...p, [from]: label }));
@@ -159,7 +159,7 @@ export default function HorseTest() {
 
   /* === Перезапуск === */
   const restart = () => {
-    playSfx(RESET_SOUNDS); // ✅ теперь без задержки
+    playSfx(RESET_SOUNDS);
     setActiveNodes(["start"]);
     setChosen({});
     setSelectedBtn({});
@@ -185,10 +185,10 @@ export default function HorseTest() {
         }
       `}</style>
 
-      {/* крестик */}
+      {/* крестик (фиксированный) */}
       <Link
         href="/"
-        className="absolute top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition z-50"
+        className="fixed top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition z-40"
       >
         ✕
       </Link>
@@ -275,10 +275,12 @@ export default function HorseTest() {
         })}
       </div>
 
-      {/* Футер */}
-      <FooterLink />
+      {/* Футер (фиксированный, ниже модалки) */}
+      <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
+        <FooterLink />
+      </div>
 
-      {/* Модалка */}
+      {/* Модалка (остается выше футера и крестика) */}
       {showInfo && (
         <div className="fixed inset-0 bg-black/70 z-50 flex justify-center items-start overflow-y-auto p-4">
           <div className="relative max-w-2xl w-full mt-10 mb-10 p-6 rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl text-white max-h-[90vh] overflow-y-auto">

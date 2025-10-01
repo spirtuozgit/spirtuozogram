@@ -144,18 +144,18 @@ export default function MicrobeGame() {
 
   return (
     <div
-      className="w-screen h-screen bg-black relative overflow-hidden select-none"
+      className="w-screen min-h-screen bg-black relative overflow-hidden select-none"
       onClick={handleClick}
     >
-      {/* Счёт */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-xl backdrop-blur-md bg-white/10 text-white text-lg font-bold shadow-md">
+      {/* Счёт (фиксированный сверху) */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-xl backdrop-blur-md bg-white/10 text-white text-lg font-bold shadow-md z-50">
         {score}
       </div>
 
-      {/* Назад */}
+      {/* Назад (фиксированный крестик) */}
       <Link
         href="/"
-        className="absolute top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition"
+        className="fixed top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition z-50"
       >
         ✕
       </Link>
@@ -216,8 +216,10 @@ export default function MicrobeGame() {
         ))}
       </div>
 
-      {/* Футер */}
-      <FooterLink />
+      {/* Футер (фиксированный снизу + safe-area) */}
+      <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-50">
+        <FooterLink />
+      </div>
 
       <style jsx>{`
         @keyframes fadeUp {
