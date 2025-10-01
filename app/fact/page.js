@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import FooterLink from "../../components/FooterLink"; // путь может отличаться
+import FooterLink from "../../components/FooterLink";
+import Loader from "../../components/Loader"; // 👈 добавили наш Loader
 
 function sleep(ms, signal) {
   return new Promise((resolve) => {
@@ -23,7 +24,7 @@ export default function FactPage() {
 
   const audioRef = useRef(null);
   const abortRef = useRef(null);
-  const lastIndexRef = useRef(-1); // запомним последний показанный факт
+  const lastIndexRef = useRef(-1);
 
   // загрузка фактов
   useEffect(() => {
@@ -33,7 +34,7 @@ export default function FactPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // выбрать случайный стартовый факт (не тот же, что был прошлый раз)
+  // выбор случайного факта
   useEffect(() => {
     if (facts.length > 0 && currentIndex === 0) {
       let next;
@@ -80,9 +81,7 @@ export default function FactPage() {
           if (audioRef.current.paused) {
             await audioRef.current.play();
           }
-        } catch (err) {
-          console.warn("Ошибка воспроизведения звука:", err);
-        }
+        } catch {}
       }
 
       for (let i = 0; i < fact.length; i++) {
@@ -104,7 +103,7 @@ export default function FactPage() {
         } catch {}
       }
 
-      // пауза → выбираем случайный следующий факт
+      // пауза → новый факт
       await sleep(5000, controller.signal);
       if (!controller.signal.aborted) {
         setCurrentIndex((prev) => {
@@ -129,12 +128,9 @@ export default function FactPage() {
     };
   }, [facts, currentIndex]);
 
+  // ✅ показываем наш Loader, пока факты не загружены
   if (loading) {
-    return (
-      <div className="h-screen w-full bg-black text-green-400 flex items-center justify-center">
-        Загрузка фактов…
-      </div>
-    );
+    return <Loader text="Загружаем факты…" />;
   }
 
   return (

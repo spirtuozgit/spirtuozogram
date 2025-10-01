@@ -1,13 +1,26 @@
 "use client";
-import { useState } from "react";
-import FooterLink from "../../components/FooterLink"; // ✅ добавлен футер
+import { useState, useEffect } from "react";
+import FooterLink from "../../components/FooterLink";
+import Loader from "../../components/Loader";
+import { preloadAudio, playAudio } from "../../utils/audio"; // 👈 общий модуль
 
 export default function PopPage() {
   const [clicks, setClicks] = useState(0);
   const [explosions, setExplosions] = useState([]);
   const [disabledBlocks, setDisabledBlocks] = useState(new Set());
+  const [ready, setReady] = useState(false);
 
   const BLOCK_SIZE = 3;
+  const sounds = ["/sound/pop_1.mp3", "/sound/pop_2.mp3", "/sound/pop_3.mp3"];
+
+  // ---------- предзагрузка звуков ----------
+  useEffect(() => {
+    const loadAll = async () => {
+      await Promise.all(sounds.map(preloadAudio));
+      setReady(true);
+    };
+    loadAll();
+  }, []);
 
   const handleClick = (e) => {
     const x = Math.floor(e.clientX / BLOCK_SIZE) * BLOCK_SIZE;
@@ -29,10 +42,12 @@ export default function PopPage() {
       setExplosions((prev) => prev.filter((ex) => ex.id !== id));
     }, 1000);
 
-    const sounds = ["/sound/pop_1.mp3", "/sound/pop_2.mp3", "/sound/pop_3.mp3"];
+    // ✅ звук без задержки
     const randomSound = sounds[Math.floor(Math.random() * sounds.length)];
-    new Audio(randomSound).play();
+    playAudio(randomSound);
   };
+
+  if (!ready) return <Loader text="Загружаем звуки…" />;
 
   return (
     <div

@@ -3,32 +3,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
+import { preloadAudio, playAudio } from "../../utils/audio"; // ✅ общий модуль
 
 /* === ПАРАМЕТРЫ === */
 const CELL = 4;
 const ANIMATION_SPEED = 400;
 const MOVE_SPEED = 4; // базовая скорость
 const EAT_RADIUS = 12;
-
-/* === АУДИО КЭШ === */
-const audioCache = {};
-function preloadAudio(src) {
-  return new Promise((resolve) => {
-    if (audioCache[src]) return resolve();
-    const a = new Audio(src);
-    a.preload = "auto";
-    a.addEventListener("canplaythrough", () => {
-      audioCache[src] = a;
-      resolve();
-    });
-    a.addEventListener("error", resolve);
-  });
-}
-function playSound(src) {
-  const base = audioCache[src];
-  const a = base ? base.cloneNode(true) : new Audio(src);
-  a.play().catch(() => {});
-}
 
 export default function MicrobeGame() {
   const [food, setFood] = useState([]);
@@ -120,7 +101,8 @@ export default function MicrobeGame() {
           nearest.eaten = true;
           setFood((prevFood) => prevFood.filter((f) => f.id !== nearest.id));
           setScore((s) => s + 1);
-          playSound("/sound/hroom.mp3");
+
+          playAudio("/sound/hroom.mp3"); // ✅ теперь без задержки
 
           if (phrases.length > 0) {
             const phrase = phrases[Math.floor(Math.random() * phrases.length)];

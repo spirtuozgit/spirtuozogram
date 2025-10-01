@@ -1,39 +1,11 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-
-// ---------- Аудиокэш ----------
-const audioCache = {};
-function preloadAudio(src) {
-  return new Promise((resolve) => {
-    if (audioCache[src]) return resolve();
-    const a = new Audio(src);
-    a.preload = "auto";
-    a.addEventListener("canplaythrough", () => {
-      audioCache[src] = a;
-      resolve();
-    });
-    a.addEventListener("error", () => {
-      console.error("Ошибка загрузки звука:", src);
-      resolve();
-    });
-    a.load();
-  });
-}
-
-// ---------- Камера ----------
-function CameraRig({ dist }) {
-  const { camera } = useThree();
-  useEffect(() => {
-    camera.position.set(0, 0, dist);
-    camera.updateProjectionMatrix();
-  }, [camera, dist]);
-  return null;
-}
+import { preloadAudio, playAudio } from "../../utils/audio";
 
 // ---------- Утка ----------
 function Duck({ onQuack, rotationY }) {
@@ -41,8 +13,8 @@ function Duck({ onQuack, rotationY }) {
   return (
     <primitive
       object={scene}
-      scale={1.5}
-      rotation={[0, rotationY, 0]} // всегда повернута на 90° по Y
+      scale={1}
+      rotation={[0, rotationY, 0]}
       onPointerDown={onQuack}
     />
   );
@@ -52,63 +24,22 @@ useGLTF.preload("/models/duck.glb");
 // ---------- Страница ----------
 export default function DuckPage() {
   const [ready, setReady] = useState(false);
-
-  // дистанция камеры (с анимацией)
-  const [dist, setDist] = useState(3);
-  const targetDist = useRef(3);
-
-  // поворот уточки (фиксированное начальное значение)
   const [rotationY] = useState(Math.PI / 2);
-
   const [quacks, setQuacks] = useState([]);
-  const audioRef = useRef(null);
   const idCounter = useRef(0);
-
-  const MIN_DIST = 1.5;
-  const MAX_DIST = 6;
 
   // ---------- загрузка звука ----------
   useEffect(() => {
     const boot = async () => {
       await preloadAudio("/sound/quack.mp3");
-      audioRef.current = audioCache["/sound/quack.mp3"];
       setReady(true);
     };
     boot();
   }, []);
 
-  // ---------- анимация плавного зума ----------
-  useEffect(() => {
-    let frame;
-    const animate = () => {
-      setDist((d) => {
-        const next = d + (targetDist.current - d) * 0.1;
-        return Math.abs(next - targetDist.current) < 0.001
-          ? targetDist.current
-          : next;
-      });
-      frame = requestAnimationFrame(animate);
-    };
-    animate();
-    return () => cancelAnimationFrame(frame);
-  }, []);
-
   // ---------- звук + текст ----------
   const handleQuack = (e) => {
-    const a = audioRef.current;
-    if (a) {
-      try {
-        a.currentTime = 0;
-        a.volume = 1;
-        a.playbackRate = 1;
-        a.play().catch((err) =>
-          console.error("Не удалось воспроизвести звук:", err)
-        );
-      } catch (err) {
-        console.error("Ошибка звука:", err);
-      }
-    }
-
+    playAudio("/sound/quack.mp3");
     const point = e.point.clone();
     idCounter.current += 1;
     const id = idCounter.current;
@@ -120,24 +51,10 @@ export default function DuckPage() {
     }, 1200);
   };
 
-  // ---------- колесо мыши (устанавливает targetDist) ----------
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const factor = Math.exp(e.deltaY * 0.0015);
-    targetDist.current = Math.min(
-      MAX_DIST,
-      Math.max(MIN_DIST, targetDist.current * factor)
-    );
-  };
-
-  if (!ready) return <Loader done={ready} />;
+  if (!ready) return <Loader text="Загрузка уточки…" />;
 
   return (
-    <div
-      className="relative w-screen h-screen bg-black select-none"
-      onContextMenu={(e) => e.preventDefault()}
-      onWheel={handleWheel}
-    >
+    <div className="relative w-screen h-screen bg-black select-none">
       {/* Кнопка назад */}
       <Link
         href="/"
@@ -147,20 +64,18 @@ export default function DuckPage() {
       </Link>
 
       {/* 3D сцена */}
-      <Canvas
-        camera={{ position: [0, 0, dist], fov: 50, near: 0.01, far: 10000 }}
-      >
+      <Canvas camera={{ position: [0, 0, 3], fov: 50, near: 0.1, far: 100 }}>
         <ambientLight intensity={0.8} />
         <directionalLight position={[5, 8, 5]} intensity={1} />
 
-        <CameraRig dist={dist} />
-
         <OrbitControls
-          enableZoom={false}
+          enableZoom={true}     // ✅ включаем нативный зум
           enablePan={false}
           rotateSpeed={1}
           enableDamping
           dampingFactor={0.08}
+          minDistance={1}       // ✅ ограничение минимального зума
+          maxDistance={6}       // ✅ ограничение максимального зума
         />
 
         <Duck onQuack={handleQuack} rotationY={rotationY} />

@@ -1,12 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
-import FooterLink from "../../components/FooterLink"; // ✅ футер
+import FooterLink from "../../components/FooterLink";
+import Loader from "../../components/Loader"; // 👈 добавили
 
 export default function LeninPage() {
+  const [loaded, setLoaded] = useState(false);
+
   return (
     <main className="bg-black min-h-screen relative flex flex-col">
-      {/* Кнопка назад — крестик на чёрном фоне */}
+      {!loaded && <Loader text="Загружаем Ленина…" />} {/* 👈 лоадер пока нет картинок */}
+
+      {/* Кнопка назад */}
       <button
         aria-label="Назад"
         onClick={() => window.history.back()}
@@ -15,7 +21,7 @@ export default function LeninPage() {
         ✕
       </button>
 
-      {/* Десктоп: zoom/pan в аккуратном вьюпорте */}
+      {/* Десктоп: zoom/pan */}
       <div className="hidden md:flex flex-1 items-center justify-center py-8">
         <TransformWrapper
           initialScale={1}
@@ -40,18 +46,20 @@ export default function LeninPage() {
               alt="Этапы жизни Ленина"
               className="block max-w-full max-h-full mx-auto select-none"
               draggable={false}
+              onLoad={() => setLoaded(true)} // 👈 снимаем лоадер после загрузки
             />
           </TransformComponent>
         </TransformWrapper>
       </div>
 
-      {/* Мобилка: вертикальная прокрутка, картинка ниже крестика */}
+      {/* Мобилка */}
       <div className="md:hidden flex-1 w-full pt-16 pb-6">
         <img
           src="/phone.jpg"
           alt="Этапы жизни Ленина"
           className="block w-[92%] mx-auto h-auto select-none shadow-2xl"
           draggable={false}
+          onLoad={() => setLoaded(true)} // 👈 снимаем лоадер
         />
       </div>
 

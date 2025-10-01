@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
+import { playAudio } from "../../utils/audio"; // ✅ используем общий модуль
 
 /* === ДАННЫЕ ТЕСТА === */
 const NODES = {
@@ -48,11 +49,8 @@ const HORSE_COUNT = 3;
 const CLICK_SOUNDS = ["/sound/click.mp3"];
 const RESET_SOUNDS = ["/sound/reset.mp3"];
 const playSfx = (list) => {
-  try {
-    const src = list[Math.floor(Math.random() * list.length)];
-    const a = new Audio(src);
-    a.play().catch(() => {});
-  } catch {}
+  const src = list[Math.floor(Math.random() * list.length)];
+  playAudio(src);
 };
 
 export default function HorseTest() {
@@ -104,12 +102,14 @@ export default function HorseTest() {
     };
   }, []);
 
+  /* === Анимация кадров === */
   useEffect(() => {
     if (!loaded) return;
     const id = setInterval(() => setFrame((f) => (f + 1) % HORSE_FRAMES.length), ANIMATION_SPEED);
     return () => clearInterval(id);
   }, [loaded]);
 
+  /* === Движение лошадей === */
   useEffect(() => {
     if (!loaded) return;
     const interval = setInterval(() => {
@@ -134,6 +134,7 @@ export default function HorseTest() {
     return () => clearInterval(interval);
   }, [loaded]);
 
+  /* === Скролл к активному узлу === */
   useEffect(() => {
     const last = activeNodes[activeNodes.length - 1];
     const el = document.getElementById(last);
@@ -142,8 +143,9 @@ export default function HorseTest() {
     }
   }, [activeNodes]);
 
+  /* === Добавление узла === */
   const addNode = (from, to, label) => {
-    playSfx(CLICK_SOUNDS);
+    playSfx(CLICK_SOUNDS); // ✅ теперь без задержки
     if (chosen[from]) return;
     setChosen((p) => ({ ...p, [from]: true }));
     setSelectedBtn((p) => ({ ...p, [from]: label }));
@@ -155,8 +157,9 @@ export default function HorseTest() {
     });
   };
 
+  /* === Перезапуск === */
   const restart = () => {
-    playSfx(RESET_SOUNDS);
+    playSfx(RESET_SOUNDS); // ✅ теперь без задержки
     setActiveNodes(["start"]);
     setChosen({});
     setSelectedBtn({});
@@ -285,13 +288,13 @@ export default function HorseTest() {
             >
               ✕
             </button>
-            <h2 className="text-2xl font-bold mb-4">Синдром Гиппохорсики (Syndroma Hippohorsica)</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Синдром Гиппохорсики (Syndroma Hippohorsica)
+            </h2>
             <p className="mb-2">
               — редкое и малоизученное состояние, при котором у человека формируется устойчивая
               идентификация себя с лошадью. Заболевание чаще всего развивается у лиц, находящихся в
-              состоянии хронической переработки и профессионального выгорания. Распространённым
-              фоновым убеждением является установка «работаю как лошадь», со временем приобретающая
-              патологический характер.
+              состоянии хронической переработки и профессионального выгорания.
             </p>
             <p className="mb-2">
               Этиологически синдром связан с длительным стрессом, нарушением баланса труда и отдыха.

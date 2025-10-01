@@ -83,7 +83,7 @@ export default function ISSPage() {
 
   return (
     <div className="bg-black text-white min-h-screen px-6 py-8 flex flex-col items-center gap-8 relative pb-16">
-      {loading && <Loader text="Загружаем данные ISS…" />}
+      {loading && <Loader text="Сканируем космос, ищем МКС…" />}
 
       {/* крестик назад */}
       <Link
