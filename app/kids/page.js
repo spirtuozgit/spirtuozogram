@@ -52,12 +52,19 @@ export default function KidsPage() {
   if (!poem) return null;
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-[#111] text-white p-6">
-      <h1 className="text-2xl font-bold mb-6">{poem.title}</h1>
-      <pre className="whitespace-pre-wrap text-lg leading-relaxed text-center mb-4">
+    <main className="flex flex-col items-center justify-center min-h-screen bg-[#111] text-white px-4 sm:px-6 py-10">
+      {/* Заголовок */}
+      <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 text-center">
+        {poem.title}
+      </h1>
+
+      {/* Текст стиха */}
+      <pre className="whitespace-pre-wrap text-base sm:text-lg md:text-xl leading-relaxed text-center mb-6 max-w-3xl">
         {poem.text}
       </pre>
-      <p className="italic text-gray-300">
+
+      {/* Автор и дата */}
+      <p className="italic text-gray-300 text-sm sm:text-base text-center">
         {poem.author}, {poem.date}
       </p>
     </main>

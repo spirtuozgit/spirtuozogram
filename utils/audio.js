@@ -1,90 +1,69 @@
 // utils/audio.js
 
-let audioCtx;
-const bufferCache = {};
+// Хранилища
+const sounds = {};       // загруженные оригинальные звуки
+const loops = {};        // активные циклы (playLoop)
 
-// Единый контекст
-export function getCtx() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    const handleVisibility = () => {
-      if (!audioCtx) return;
-      if (document.hidden) {
-        audioCtx.suspend();
-      } else {
-        audioCtx.resume();
-      }
+/* === Загрузка звука === */
+export async function loadSound(key, url) {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio(url);
+    audio.preload = "auto";
+    audio.oncanplaythrough = () => {
+      sounds[key] = audio;
+      resolve(audio);
     };
-
-    document.addEventListener("visibilitychange", handleVisibility);
-    window.addEventListener("pagehide", () => audioCtx && audioCtx.suspend());
-    window.addEventListener("pageshow", () => audioCtx && audioCtx.resume());
-  }
-  return audioCtx;
-}
-
-// Принудительная разблокировка (вызывать при жесте)
-export function unlockAudio() {
-  const ctx = getCtx();
-  if (ctx && ctx.state === "suspended") {
-    ctx.resume();
-  }
-}
-
-/**
- * Предзагрузка (без «прогрева» — iOS блокирует)
- */
-export async function preloadAudio(path) {
-  const ctx = getCtx();
-  if (bufferCache[path]) return;
-
-  try {
-    const res = await fetch(path);
-    const arr = await res.arrayBuffer();
-    const buffer = await ctx.decodeAudioData(arr);
-    bufferCache[path] = buffer;
-  } catch (err) {
-    console.error("Ошибка предзагрузки:", path, err);
-  }
-}
-
-/**
- * Однократное воспроизведение
- */
-export function playAudio(path) {
-  return new Promise((resolve) => {
-    const ctx = getCtx();
-    const buffer = bufferCache[path];
-    if (!buffer) return resolve();
-
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-
-    resolve();
+    audio.onerror = reject;
   });
 }
 
-/**
- * Зацикленное воспроизведение (например, топот)
- */
-export function playLoop(path, volume = 1) {
-  const ctx = getCtx();
-  const buffer = bufferCache[path];
-  if (!buffer) return null;
+/* === Разовое воспроизведение === */
+export function playSound(key, volume = 1.0) {
+  if (!sounds[key]) return;
+  // делаем клон, чтобы можно было накладывать несколько звуков
+  const clone = sounds[key].cloneNode();
+  clone.volume = volume;
+  clone.play().catch(() => {});
+  return clone;
+}
 
-  const source = ctx.createBufferSource();
-  const gain = ctx.createGain();
-  gain.gain.value = volume;
+/* === Циклическое воспроизведение === */
+export function playLoop(key, volume = 1.0) {
+  if (!sounds[key]) return null;
 
-  source.buffer = buffer;
-  source.loop = true;
+  const audio = sounds[key].cloneNode();
+  audio.volume = volume;
+  audio.loop = true;
+  audio.play().catch(() => {});
 
-  source.connect(gain);
-  gain.connect(ctx.destination);
-  source.start(0);
+  // сохраняем активный цикл
+  loops[key] = audio;
 
-  return { source, gain };
+  return {
+    stop: () => {
+      audio.pause();
+      audio.currentTime = 0;
+      delete loops[key];
+    },
+  };
+}
+
+/* === Универсально: стопнуть все звуки === */
+export function stopAllSounds() {
+  // Остановим все циклы
+  Object.values(loops).forEach((a) => {
+    if (a && typeof a.pause === "function") {
+      a.pause();
+      a.currentTime = 0;
+    }
+  });
+  for (const k in loops) delete loops[k];
+
+  // Сбросим оригиналы (если кто-то случайно их воспроизвёл напрямую)
+  Object.values(sounds).forEach((a) => {
+    try {
+      a.pause();
+      a.currentTime = 0;
+    } catch {}
+  });
 }

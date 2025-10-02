@@ -5,7 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { preloadAudio, playAudio } from "../../utils/audio"; // ✅ общий модуль
+import { loadSound, playSound } from "../../utils/audio"; // ✅ новый модуль
 
 // ---------- Утка ----------
 function Duck({ onQuack, rotationY }) {
@@ -27,17 +27,23 @@ export default function DuckPage() {
 
   // ---------- предзагрузка звука ----------
   useEffect(() => {
-    preloadAudio("/sound/quack.ogg").then(() => setReady(true));
+    loadSound("quack", "/sound/quack.ogg").then(() => setReady(true));
   }, []);
 
   // ---------- звук + надпись "Кря" ----------
   const handleQuack = (e) => {
-    playAudio("/sound/quack.ogg");
+    playSound("quack");
+
     const point = e.point.clone();
     idCounter.current += 1;
     const id = idCounter.current;
-    const size = 1.5 + Math.random() * 1.5;
+
+    // адаптивный размер: базируется на ширине экрана + случайность
+    const base = window.innerWidth < 640 ? 1 : window.innerWidth < 1024 ? 1.8 : 2.4;
+    const size = base + Math.random() * 1.2;
+
     const rotate = -30 + Math.random() * 60;
+
     setQuacks((q) => [...q, { id, pos: point, size, rotate }]);
     setTimeout(() => {
       setQuacks((q) => q.filter((qq) => qq.id !== id));
@@ -48,7 +54,7 @@ export default function DuckPage() {
 
   return (
     <div className="relative w-screen h-dvh bg-black select-none flex items-center justify-center">
-      {/* Кнопка назад (фиксированная) */}
+      {/* Кнопка назад */}
       <Link
         href="/"
         className="fixed top-4 right-6 z-50 text-white text-2xl font-bold hover:text-red-400 transition"
@@ -56,7 +62,7 @@ export default function DuckPage() {
         ✕
       </Link>
 
-      {/* 3D сцена по центру */}
+      {/* 3D сцена */}
       <Canvas
         camera={{ position: [0, 0, 3], fov: 50, near: 0.1, far: 100 }}
         style={{ width: "100%", height: "100%" }}
@@ -90,7 +96,7 @@ export default function DuckPage() {
         ))}
       </Canvas>
 
-      {/* Футер (фиксированный, с safe-area) */}
+      {/* Футер */}
       <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
         <FooterLink />
       </div>
@@ -101,6 +107,7 @@ export default function DuckPage() {
           font-weight: bold;
           animation: quackAnim 1.2s forwards;
           pointer-events: none;
+          text-shadow: 0 0 6px rgba(0, 0, 0, 0.7);
         }
         @keyframes quackAnim {
           0% {

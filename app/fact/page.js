@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import FooterLink from "../../components/FooterLink";
 import Loader from "../../components/Loader";
-import { preloadAudio, playAudio } from "../../utils/audio"; // ✅ общий модуль
+import { loadSound, playLoop, stopAllSounds } from "../../utils/audio";
 
 function sleep(ms, signal) {
   return new Promise((resolve) => {
@@ -23,7 +23,6 @@ export default function FactPage() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const audioRef = useRef(null); // теперь храним только путь
   const abortRef = useRef(null);
   const lastIndexRef = useRef(-1);
 
@@ -53,12 +52,9 @@ export default function FactPage() {
 
   // предзагрузка звука
   useEffect(() => {
-    preloadAudio("/sound/typewrite.ogg").then(() => {
-      audioRef.current = "/sound/typewrite.ogg";
-    });
-    return () => {
-      audioRef.current = null;
-    };
+    loadSound("typewrite", "/sound/typewrite.ogg").catch((e) =>
+      console.warn("Ошибка загрузки звука:", e)
+    );
   }, []);
 
   // печать текста
@@ -73,23 +69,26 @@ export default function FactPage() {
     setText("");
 
     const run = async () => {
-      // старт звука печати
-      if (audioRef.current) {
-        await playAudio(audioRef.current);
-      }
+      // ✅ запускаем звук один раз в начале печати
+      const typingLoop = playLoop("typewrite", 0.6);
 
-      // печатаем по символам
       for (let i = 0; i < fact.length; i++) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) {
+          typingLoop?.stop();
+          return;
+        }
+
         setText((prev) => prev + fact.charAt(i));
 
         let delay = 40 + Math.floor(Math.random() * 31);
         if (fact.charAt(i) === " " && Math.random() < 0.15) {
           delay = 100 + Math.floor(Math.random() * 101);
         }
-
         await sleep(delay, controller.signal);
       }
+
+      // ✅ останавливаем звук после окончания печати
+      typingLoop?.stop();
 
       // пауза → новый факт
       await sleep(5000, controller.signal);
@@ -107,30 +106,31 @@ export default function FactPage() {
     };
 
     run();
-
     return () => {
       controller.abort();
+      stopAllSounds(); // убиваем все звуки при смене факта
     };
   }, [facts, currentIndex]);
 
-  if (loading) {
-    return <Loader text="Загружаем факты…" />;
-  }
+  if (loading) return <Loader text="Загружаем факты…" />;
 
   return (
-    <div className="relative h-screen w-full bg-black text-green-400 font-mono flex flex-col items-center justify-center">
+    <div className="relative min-h-screen w-full bg-black text-green-400 font-mono flex flex-col items-center justify-center px-4">
       {/* крестик */}
       <button
-        onClick={() => window.history.back()}
-        className="fixed top-4 right-4 text-3xl text-white z-50"
+        onClick={() => {
+          stopAllSounds();
+          window.history.back();
+        }}
+        className="fixed top-4 right-4 text-2xl sm:text-3xl text-white z-50"
       >
         ✕
       </button>
 
-      {/* текст (поднят чуть выше центра) */}
-      <div className="max-w-4xl px-6 text-center text-2xl sm:text-3xl md:text-4xl leading-relaxed -translate-y-12">
+      {/* текст */}
+      <div className="max-w-3xl px-2 text-center text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed -translate-y-8">
         <span className="whitespace-pre-line break-words">{text}</span>
-        <span className="inline-block w-2 h-6 bg-green-400 ml-1 animate-pulse align-baseline" />
+        <span className="inline-block w-1.5 sm:w-2 h-4 sm:h-6 bg-green-400 ml-1 animate-pulse align-baseline" />
       </div>
 
       {/* футер */}

@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { playAudio, preloadAudio, playLoop } from "../../utils/audio"; // ✅ общий модуль
+import { playSound, loadSound, stopAllSounds } from "../../utils/audio";
 
 /* === ДАННЫЕ ТЕСТА === */
 const NODES = {
@@ -45,14 +45,6 @@ const ANIMATION_SPEED = 400;
 const BASE_MOVE_SPEED = 3;
 const HORSE_COUNT = 3;
 
-/* === ЗВУКИ === */
-const CLICK_SOUNDS = ["/sound/click.ogg"];
-const RESET_SOUNDS = ["/sound/reset.ogg"];
-const playSfx = (list) => {
-  const src = list[Math.floor(Math.random() * list.length)];
-  playAudio(src);
-};
-
 export default function HorseTest() {
   const [activeNodes, setActiveNodes] = useState(["start"]);
   const [chosen, setChosen] = useState({});
@@ -60,8 +52,6 @@ export default function HorseTest() {
   const [horses, setHorses] = useState([]);
   const [frame, setFrame] = useState(0);
   const [loaded, setLoaded] = useState(false);
-
-  const hoofAudioRef = useRef(null);
   const [showInfo, setShowInfo] = useState(false);
 
   /* === Loader + предзагрузка === */
@@ -88,16 +78,14 @@ export default function HorseTest() {
     img1.src = HORSE_FRAMES[0];
     img2.src = HORSE_FRAMES[1];
 
-    // ✅ звук топота теперь через Web Audio API
-    preloadAudio("/sound/hoof.ogg").then(() => {
-      hoofAudioRef.current = playLoop("/sound/hoof.ogg", 0.6);
-    });
+    // предзагрузка только клика и ресета
+    Promise.all([
+      loadSound("click", "/sound/click.ogg"),
+      loadSound("reset", "/sound/reset.ogg"),
+    ]);
 
     return () => {
-      if (hoofAudioRef.current?.source) {
-        hoofAudioRef.current.source.stop();
-      }
-      hoofAudioRef.current = null;
+      stopAllSounds();
     };
   }, []);
 
@@ -133,32 +121,18 @@ export default function HorseTest() {
     return () => clearInterval(interval);
   }, [loaded]);
 
-  /* === Скролл к активному узлу === */
-  useEffect(() => {
-    const last = activeNodes[activeNodes.length - 1];
-    const el = document.getElementById(last);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, [activeNodes]);
-
   /* === Добавление узла === */
   const addNode = (from, to, label) => {
-    playSfx(CLICK_SOUNDS);
+    playSound("click");
     if (chosen[from]) return;
     setChosen((p) => ({ ...p, [from]: true }));
     setSelectedBtn((p) => ({ ...p, [from]: label }));
-    setActiveNodes((p) => {
-      if (!p.includes(to)) {
-        return [...p, to];
-      }
-      return p;
-    });
+    setActiveNodes((p) => (!p.includes(to) ? [...p, to] : p));
   };
 
   /* === Перезапуск === */
   const restart = () => {
-    playSfx(RESET_SOUNDS);
+    playSound("reset");
     setActiveNodes(["start"]);
     setChosen({});
     setSelectedBtn({});
@@ -167,39 +141,26 @@ export default function HorseTest() {
   if (!loaded) return <Loader done={loaded} />;
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center p-6 relative overflow-hidden">
-      <style jsx global>{`
-        @keyframes fadeDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .tile {
-          animation: fadeDown 0.6s ease forwards;
-        }
-      `}</style>
-
+    <div className="min-h-screen bg-black text-white flex flex-col items-center p-4 sm:p-6 relative overflow-hidden">
       {/* крестик */}
       <Link
         href="/"
-        className="fixed top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition z-40"
+        onClick={() => stopAllSounds()}
+        className="fixed top-4 right-4 sm:right-6 text-2xl sm:text-3xl font-bold text-white hover:text-red-400 transition z-40"
       >
         ✕
       </Link>
 
       {/* Заголовок */}
-      <h1 className="text-4xl font-bold mb-2 z-20">Я лошадь?</h1>
-      <p className="text-lg text-white/60 mb-4 z-20">наиболее точный психолгический тест</p>
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 z-20">Я лошадь?</h1>
+      <p className="text-sm sm:text-base md:text-lg text-white/60 mb-6 z-20">
+        наиболее точный психологический тест
+      </p>
 
       {/* Ссылка на модалку */}
       <button
         onClick={() => setShowInfo(true)}
-        className="italic text-sm text-gray-400 hover:text-gray-200 mb-10 z-20"
+        className="italic text-xs sm:text-sm md:text-base text-gray-400 hover:text-gray-200 mb-8 z-20"
       >
         Почему люди страдают Гиппохорсикой? (Syndroma Hippohorsica)
       </button>
@@ -213,17 +174,18 @@ export default function HorseTest() {
             left: h.x,
             top: h.y,
             transform: `translate(-50%, -50%) scaleX(${h.dir === 1 ? 1 : -1})`,
-            width: 64,
-            height: 64,
-            zIndex: 0,
           }}
         >
-          <img src={HORSE_FRAMES[frame]} alt="horse" className="w-full h-full" />
+          <img
+            src={HORSE_FRAMES[frame]}
+            alt="horse"
+            className="w-12 sm:w-16 md:w-20 lg:w-24 h-auto"
+          />
         </div>
       ))}
 
       {/* Плитки */}
-      <div className="relative z-10 w-full max-w-3xl mx-auto pb-40 flex flex-col items-center gap-14">
+      <div className="relative z-10 w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto pb-32 flex flex-col items-center gap-10">
         {activeNodes.map((id) => {
           const node = NODES[id];
           if (!node) return null;
@@ -234,16 +196,16 @@ export default function HorseTest() {
             <div
               id={id}
               key={id}
-              className={`tile px-5 py-4 rounded-2xl border shadow-lg text-center backdrop-blur-md mx-auto max-w-sm ${
+              className={`px-4 py-3 sm:px-5 sm:py-4 rounded-2xl border shadow-lg text-center backdrop-blur-md w-full ${
                 disabled ? "bg-green-600/30 border-green-400" : "bg-white/10 border-white/20"
               }`}
             >
-              <p className="mb-3">{node.text}</p>
+              <p className="mb-3 text-sm sm:text-base md:text-lg">{node.text}</p>
               <div className="flex gap-2 flex-wrap justify-center">
                 {isFinal ? (
                   <button
                     onClick={restart}
-                    className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition whitespace-nowrap"
+                    className="px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition text-sm sm:text-base"
                   >
                     но можем перепроверить
                   </button>
@@ -255,7 +217,7 @@ export default function HorseTest() {
                         key={`${id}-${b.to}-${b.label}`}
                         onClick={() => addNode(id, b.to, b.label)}
                         disabled={disabled && !isSelected}
-                        className={`px-3 py-1.5 rounded-lg transition whitespace-nowrap ${
+                        className={`px-3 py-1.5 rounded-lg transition text-sm sm:text-base ${
                           isSelected
                             ? "bg-white/30"
                             : disabled
@@ -289,18 +251,18 @@ export default function HorseTest() {
             >
               ✕
             </button>
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold mb-4">
               Синдром Гиппохорсики (Syndroma Hippohorsica)
             </h2>
-            <p className="mb-2">
+            <p className="mb-2 text-sm sm:text-base">
               — редкое и малоизученное состояние, при котором у человека формируется устойчивая
               идентификация себя с лошадью. Заболевание чаще всего развивается у лиц, находящихся в
               состоянии хронической переработки и профессионального выгорания.
             </p>
-            <p className="mb-2">
+            <p className="mb-2 text-sm sm:text-base">
               Этиологически синдром связан с длительным стрессом, нарушением баланса труда и отдыха.
             </p>
-            <p className="mb-2">
+            <p className="mb-2 text-sm sm:text-base">
               Клиническая картина включает три формы. В лёгкой пациенты занимаются хоббихорсингом и
               коллекционируют предметы, связанные с лошадьми, иногда сопровождая это спонтанным
               ржанием. Средняя форма характеризуется навязчивыми высказываниями о собственной
@@ -308,16 +270,16 @@ export default function HorseTest() {
               носить длинные пальто. В тяжёлой стадии возникают приступы громкого ржания не к месту,
               ночной бред с нелепыми ассоциациями и выраженная социальная дезадаптация.
             </p>
-            <p className="mb-2">
+            <p className="mb-2 text-sm sm:text-base">
               Прогноз благоприятный для жизни, но осложнённый для социальной и профессиональной
               деятельности. Возможен переход в хроническую стадию (hippohorsomania chronica).
             </p>
-            <p className="mb-2">
+            <p className="mb-2 text-sm sm:text-base">
               Лечение носит комплексный характер: снижение нагрузки, отдых в естественной среде
               («пастбищная терапия»), дозированная физическая активность. В тяжёлых случаях
               целесообразен длительный отпуск.
             </p>
-            <p>
+            <p className="text-sm sm:text-base">
               Таким образом, синдром Гиппохорсики можно рассматривать как психосоматический ответ на
               профессиональное выгорание, сопровождающийся специфическими поведенческими
               особенностями, включая характерный выбор одежды у мужчин.

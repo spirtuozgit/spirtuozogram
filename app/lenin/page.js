@@ -1,12 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import FooterLink from "../../components/FooterLink";
 import Loader from "../../components/Loader";
+import { playSound, loadSound } from "../../utils/audio"; // ✅ новый звук
 
 export default function LeninPage() {
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    // предзагружаем звук для клика
+    loadSound("click", "/sound/click.ogg").catch((e) =>
+      console.warn("Ошибка предзагрузки звука:", e)
+    );
+  }, []);
+
+  const handleBack = () => {
+    playSound("click"); // звук при возврате
+    window.history.back();
+  };
+
+  const handleImageLoad = () => {
+    setLoaded(true);
+    playSound("pop1"); // звук при загрузке (если хочешь)
+  };
 
   return (
     <main className="bg-black min-h-screen relative flex flex-col">
@@ -15,7 +33,7 @@ export default function LeninPage() {
       {/* Кнопка назад (фиксированная) */}
       <button
         aria-label="Назад"
-        onClick={() => window.history.back()}
+        onClick={handleBack}
         className="fixed top-4 right-4 z-50 text-white text-3xl font-light hover:text-gray-300"
       >
         ✕
@@ -46,7 +64,7 @@ export default function LeninPage() {
               alt="Этапы жизни Ленина"
               className="block max-w-full max-h-full mx-auto select-none"
               draggable={false}
-              onLoad={() => setLoaded(true)}
+              onLoad={handleImageLoad}
             />
           </TransformComponent>
         </TransformWrapper>
@@ -54,13 +72,13 @@ export default function LeninPage() {
 
       {/* Мобилка со скроллом */}
       <div className="md:hidden flex-1 w-full pt-16 pb-6 overflow-auto">
-        <div className="w-[200%]"> {/* увеличиваем ширину для прокрутки */}
+        <div className="w-[200%]">
           <img
             src="/phone.jpg"
             alt="Этапы жизни Ленина"
             className="block w-full h-auto select-none shadow-2xl"
             draggable={false}
-            onLoad={() => setLoaded(true)}
+            onLoad={handleImageLoad}
           />
         </div>
       </div>

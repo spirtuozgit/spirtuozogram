@@ -1,9 +1,10 @@
 import "./globals.css";
-import "leaflet/dist/leaflet.css"; 
+import "leaflet/dist/leaflet.css";
 import { Rubik } from "next/font/google";
-import GlobalPreload from "../components/GlobalPreload"; // 👈 добавили импорт
+import GlobalPreload from "../components/GlobalPreload";
+import LayoutClient from "../components/LayoutClient"; // 👈 клиентский обёртчик
 
-// подключаем Rubik через next/font
+// Подключаем шрифт Rubik
 const rubik = Rubik({
   subsets: ["latin", "cyrillic"],
   weight: ["400", "500", "700"],
@@ -19,8 +20,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="ru">
       <body className={rubik.variable}>
-        <GlobalPreload />   {/* 👈 вот тут добавили */}
-        {children}
+        {/* глобальная предзагрузка ресурсов */}
+        <GlobalPreload />
+        {/* обёртка, которая работает на клиенте и управляет звуками */}
+        <LayoutClient>{children}</LayoutClient>
       </body>
     </html>
   );

@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { preloadAudio, playAudio } from "../../utils/audio"; // ✅ общий модуль
+import { playSound, loadSound } from "../../utils/audio"; // ✅ новый менеджер звука
 
 /* === ПАРАМЕТРЫ === */
 const CELL = 4;
 const ANIMATION_SPEED = 400;
-const MOVE_SPEED = 4; // базовая скорость
+const MOVE_SPEED = 4; 
 const EAT_RADIUS = 12;
 
 export default function MicrobeGame() {
@@ -27,8 +27,8 @@ export default function MicrobeGame() {
   /* === Загрузка звуков и фраз === */
   useEffect(() => {
     const load = async () => {
-      const sounds = ["/sound/hroom.ogg"];
-      await Promise.all(sounds.map(preloadAudio));
+      // загружаем звук через новый менеджер
+      await loadSound("hroom", "/sound/hroom.ogg");
 
       try {
         const res = await fetch("/data/phrases.json");
@@ -82,10 +82,9 @@ export default function MicrobeGame() {
 
         const dist = Math.hypot(x - nearest.x, y - nearest.y);
 
-        // скорость: быстрее вдали, медленнее вблизи
         const speed = Math.max(
-          MOVE_SPEED * 0.5, // минимальная скорость
-          Math.min(MOVE_SPEED + dist / 80, MOVE_SPEED * 3) // ограничение сверху
+          MOVE_SPEED * 0.5,
+          Math.min(MOVE_SPEED + dist / 80, MOVE_SPEED * 3)
         );
 
         const angle = Math.atan2(nearest.y - y, nearest.x - x);
@@ -102,7 +101,7 @@ export default function MicrobeGame() {
           setFood((prevFood) => prevFood.filter((f) => f.id !== nearest.id));
           setScore((s) => s + 1);
 
-          playAudio("/sound/hroom.ogg"); // ✅ теперь без задержки
+          playSound("hroom"); // ✅ новое воспроизведение
 
           if (phrases.length > 0) {
             const phrase = phrases[Math.floor(Math.random() * phrases.length)];
@@ -216,7 +215,7 @@ export default function MicrobeGame() {
         ))}
       </div>
 
-      {/* Футер (фиксированный снизу + safe-area) */}
+      {/* Футер */}
       <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-50">
         <FooterLink />
       </div>

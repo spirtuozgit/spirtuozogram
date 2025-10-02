@@ -85,30 +85,31 @@ export default function ISSPage() {
       {/* крестик */}
       <button
         onClick={() => window.history.back()}
-        className="fixed top-4 right-4 text-3xl text-white z-50"
+        className="fixed top-4 right-4 text-3xl sm:text-4xl text-white z-50"
       >
         ✕
       </button>
 
       {/* Верх: карта */}
-      <div className="flex-1 flex flex-col items-center px-4 pt-10 pb-2">
-         <div className="w-full max-w-[800px] h-[300px] sm:h-[400px] rounded-2xl overflow-hidden shadow-lg">
+      <div className="flex-1 flex flex-col items-center px-3 sm:px-6 pt-12 sm:pt-16 pb-4">
+        <div className="w-full max-w-[1000px] h-[220px] sm:h-[350px] md:h-[450px] lg:h-[500px] rounded-2xl overflow-hidden shadow-lg">
           <ISSMap issData={issData} />
         </div>
       </div>
 
       {/* Локация */}
-      <div className="w-full flex justify-center mb-4">
-        <div className="text-center text-sm sm:text-base text-gray-200">
-          Пролетаем над: <span className="font-semibold">{locationName}</span>
+      <div className="w-full flex justify-center mb-4 px-4">
+        <div className="text-center text-xs sm:text-sm md:text-base lg:text-lg text-gray-200">
+          Пролетаем над:{" "}
+          <span className="font-semibold">{locationName}</span>
           {issData && <> · Скорость: {Math.round(issData.velocity)} км/ч</>}
         </div>
       </div>
 
       {/* Видео */}
-      <div className="w-full flex justify-center mb-4">
+      <div className="w-full flex justify-center mb-6 px-3 sm:px-6">
         <div
-          className="w-full max-w-[800px] rounded-2xl overflow-hidden shadow-xl"
+          className="w-full max-w-[1000px] rounded-2xl overflow-hidden shadow-xl"
           style={{ aspectRatio: "16 / 9" }}
         >
           <iframe

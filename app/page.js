@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { loadSound, playSound } from "../utils/audio";
 
 const tiles = [
   { href: "/horse", label: "Я лошадь?", icon: "/icons/horse_icon.png" },
@@ -25,7 +26,11 @@ const tiles = [
 
 function Tile({ tile }) {
   return (
-    <Link href={tile.href} className="flex flex-col items-center group w-20">
+    <Link
+      href={tile.href}
+      className="flex flex-col items-center group w-20"
+      onClick={() => playSound("click")}
+    >
       <div
         className="w-20 h-20 rounded-2xl flex items-center justify-center 
                    shadow-md border border-white/20 overflow-hidden transition-transform 
@@ -77,13 +82,19 @@ function AgeCheck({ onYes, onNo }) {
       <h2 className="text-2xl mb-6">Вам есть 18 лет?</h2>
       <div className="flex gap-6">
         <button
-          onClick={onYes}
+          onClick={() => {
+            playSound("click");
+            onYes();
+          }}
           className="px-6 py-2 rounded-xl bg-green-600 hover:bg-green-700 transition"
         >
           Да
         </button>
         <button
-          onClick={onNo}
+          onClick={() => {
+            playSound("click");
+            onNo();
+          }}
           className="px-6 py-2 rounded-xl bg-red-600 hover:bg-red-700 transition"
         >
           Нет
@@ -97,6 +108,10 @@ export default function HomePage() {
   const [ageChecked, setAgeChecked] = useState(false);
   const [isAdult, setIsAdult] = useState(null);
   const router = useRouter();
+
+  useEffect(() => {
+    loadSound("click", "/sound/click.ogg");
+  }, []);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("isAdult");
@@ -134,7 +149,6 @@ export default function HomePage() {
 
   return (
     <main className="homepage relative h-dvh w-screen bg-black text-white flex flex-col items-center">
-      {/* Лого + подпись */}
       <div className="flex flex-col items-center mt-6 mb-6 z-10">
         <Image
           src="/logo_small.png"
@@ -149,7 +163,6 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Плитки */}
       <div
         className="relative z-10 w-fit mx-auto px-4 py-6 
                    rounded-3xl 
@@ -165,7 +178,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Футер сразу под плитками */}
       <div className="mt-6 z-10 text-center text-gray-500 text-sm">
         <a
           href="https://t.me/dimaspirtuoz"
