@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
@@ -53,6 +53,8 @@ export default function HorseTest() {
   const [frame, setFrame] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+
+  const nodeRefs = useRef({});
 
   /* === Loader + предзагрузка === */
   useEffect(() => {
@@ -121,6 +123,15 @@ export default function HorseTest() {
     return () => clearInterval(interval);
   }, [loaded]);
 
+  /* === Автоскролл при добавлении узлов === */
+  useEffect(() => {
+    const lastId = activeNodes[activeNodes.length - 1];
+    const el = nodeRefs.current[lastId];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [activeNodes]);
+
   /* === Добавление узла === */
   const addNode = (from, to, label) => {
     playSound("click");
@@ -165,7 +176,7 @@ export default function HorseTest() {
         Почему люди страдают Гиппохорсикой? (Syndroma Hippohorsica)
       </button>
 
-      {/* Лошади */}
+      {/* Лошади (визуал) */}
       {horses.map((h) => (
         <div
           key={h.id}
@@ -196,6 +207,7 @@ export default function HorseTest() {
             <div
               id={id}
               key={id}
+              ref={(el) => (nodeRefs.current[id] = el)} // ✅ ref для автоскролла
               className={`px-4 py-3 sm:px-5 sm:py-4 rounded-2xl border shadow-lg text-center backdrop-blur-md w-full ${
                 disabled ? "bg-green-600/30 border-green-400" : "bg-white/10 border-white/20"
               }`}
