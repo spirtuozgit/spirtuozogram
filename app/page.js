@@ -13,6 +13,12 @@ const tiles = [
   { href: "/lenin", label: "Этапы Ленина", icon: "/icons/lenin_icon.png" },
   { href: "/iss", label: "Где МКС?", icon: "/icons/iss_icon.png" },
   { href: "/fact", label: "Факты", icon: "/icons/fact_icon.png" },
+  { href: "/doodletest", label: "Дудло-Тест", icon: "/icons/doodle_icon.png" },
+  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
+  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
+  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
+  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
+  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
   { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
   { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
 ];

@@ -24,8 +24,16 @@ export function getCtx() {
   return audioCtx;
 }
 
+// Принудительная разблокировка (вызывать при жесте)
+export function unlockAudio() {
+  const ctx = getCtx();
+  if (ctx && ctx.state === "suspended") {
+    ctx.resume();
+  }
+}
+
 /**
- * Предзагрузка + прогрев
+ * Предзагрузка (без «прогрева» — iOS блокирует)
  */
 export async function preloadAudio(path) {
   const ctx = getCtx();
@@ -36,15 +44,6 @@ export async function preloadAudio(path) {
     const arr = await res.arrayBuffer();
     const buffer = await ctx.decodeAudioData(arr);
     bufferCache[path] = buffer;
-
-    // прогрев
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    const gain = ctx.createGain();
-    gain.gain.value = 0;
-    source.connect(gain);
-    gain.connect(ctx.destination);
-    source.start(0);
   } catch (err) {
     console.error("Ошибка предзагрузки:", path, err);
   }
