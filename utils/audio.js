@@ -6,18 +6,27 @@ const loops = {};
 function getContext() {
   if (!context) {
     context = new (window.AudioContext || window.webkitAudioContext)();
-    // Разбудить контекст при первом тапе
-    const resume = () => {
-      if (context.state === "suspended") {
-        context.resume();
-      }
-      document.removeEventListener("touchstart", resume);
-      document.removeEventListener("click", resume);
-    };
-    document.addEventListener("touchstart", resume, { once: true });
-    document.addEventListener("click", resume, { once: true });
   }
   return context;
+}
+
+// === Разбудить контекст (iOS fix) ===
+export async function unlockAudio() {
+  const ctx = getContext();
+  if (ctx.state === "suspended") {
+    await ctx.resume();
+  }
+
+  // iOS баг: иногда звук не идёт, пока не сыграть пустой buffer
+  try {
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch (e) {
+    console.warn("unlockAudio error", e);
+  }
 }
 
 // === Загрузка звука ===
@@ -31,8 +40,11 @@ export async function loadSound(key, url) {
 }
 
 // === Одноразовое воспроизведение ===
-export function playSound(key, volume = 1.0) {
+export async function playSound(key, volume = 1.0) {
   const ctx = getContext();
+  if (ctx.state === "suspended") {
+    await ctx.resume();
+  }
   const buffer = sounds[key];
   if (!buffer) return;
 
@@ -49,8 +61,11 @@ export function playSound(key, volume = 1.0) {
 }
 
 // === Зацикленное воспроизведение ===
-export function playLoop(key, volume = 1.0) {
+export async function playLoop(key, volume = 1.0) {
   const ctx = getContext();
+  if (ctx.state === "suspended") {
+    await ctx.resume();
+  }
   const buffer = sounds[key];
   if (!buffer) return null;
 
