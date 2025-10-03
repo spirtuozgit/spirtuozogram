@@ -13,7 +13,7 @@ const rubik = Rubik({
 
 export const metadata = {
   title: "SPIRTUOZGRAM",
-  description: "Самая бесполезная информация на все случаи жизни",
+  description: "",
 };
 
 export default function RootLayout({ children }) {

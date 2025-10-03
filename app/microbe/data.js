@@ -1,4 +1,11 @@
-[
+// параметры игры
+export const CELL = 4;
+export const ANIMATION_SPEED = 400;
+export const MOVE_SPEED = 4;
+export const EAT_RADIUS = 12;
+
+// полный список фраз микроба
+export const PHRASES = [
   "Охуеть как покушал!",
   "Пиздец как вкусно!",
   "Нихуя себе деликатес!",
@@ -49,4 +56,4 @@
   "Ёбаный рот, объедение!",
   "Ебануться вкусняшка!",
   "Пиздатая хавка!"
-]
+];

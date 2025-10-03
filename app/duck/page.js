@@ -5,29 +5,49 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { loadSound, playSound } from "../../utils/audio"; // ✅ новый модуль
+import { loadSound, playSound, stopAllSounds } from "../../utils/audio";
 
 // ---------- Утка ----------
 function Duck({ onQuack, rotationY }) {
-  const { scene } = useGLTF("/models/duck.glb");
+  const { scene } = useGLTF("/duck/models/duck.glb"); // 👈 путь в папку игры
   return (
     <group position={[0, 0, 0]} rotation={[0, rotationY, 0]} scale={1}>
       <primitive object={scene} onPointerDown={onQuack} />
     </group>
   );
 }
-useGLTF.preload("/models/duck.glb");
+useGLTF.preload("/duck/models/duck.glb");
 
 // ---------- Страница ----------
 export default function DuckPage() {
   const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [rotationY] = useState(Math.PI / 2);
   const [quacks, setQuacks] = useState([]);
   const idCounter = useRef(0);
 
-  // ---------- предзагрузка звука ----------
+  // ---------- предзагрузка ассетов ----------
   useEffect(() => {
-    loadSound("quack", "/sound/quack.ogg").then(() => setReady(true));
+    const assets = [
+      loadSound("quack", "/duck/sound/quack.ogg"),
+      new Promise((resolve) => {
+        const loader = new Image();
+        loader.onload = resolve;
+        loader.onerror = resolve;
+        loader.src = "/duck/preview.png"; // 👈 можно любую картинку-заглушку, чтобы прогресс считать
+      }),
+    ];
+
+    let loaded = 0;
+    assets.forEach((p) =>
+      p.then(() => {
+        loaded++;
+        setProgress(Math.floor((loaded / assets.length) * 100));
+      })
+    );
+
+    Promise.all(assets).then(() => setReady(true));
+    return () => stopAllSounds();
   }, []);
 
   // ---------- звук + надпись "Кря" ----------
@@ -38,10 +58,8 @@ export default function DuckPage() {
     idCounter.current += 1;
     const id = idCounter.current;
 
-    // адаптивный размер: базируется на ширине экрана + случайность
     const base = window.innerWidth < 640 ? 1 : window.innerWidth < 1024 ? 1.8 : 2.4;
     const size = base + Math.random() * 1.2;
-
     const rotate = -30 + Math.random() * 60;
 
     setQuacks((q) => [...q, { id, pos: point, size, rotate }]);
@@ -50,13 +68,14 @@ export default function DuckPage() {
     }, 1200);
   };
 
-  if (!ready) return <Loader text="Загрузка уточки…" />;
+  if (!ready) return <Loader text="Загрузка уточки…" progress={progress} />;
 
   return (
-    <div className="relative w-screen h-dvh bg-black select-none flex items-center justify-center">
+    <div className="relative w-screen h-[100dvh] bg-black select-none flex items-center justify-center">
       {/* Кнопка назад */}
       <Link
         href="/"
+        onClick={() => stopAllSounds()}
         className="fixed top-4 right-6 z-50 text-white text-2xl font-bold hover:text-red-400 transition"
       >
         ✕

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 26 26">
+  <!-- Generator: Adobe Illustrator 29.3.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 146)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #34510a;
+      }
+
+      .st1 {
+        fill: #4e7c13;
+      }
+
+      .st2 {
+        fill: #90b246;
+      }
+    </style>
+  </defs>
+  <polygon class="st1" points="24 14 24 12 22 12 20 12 19 12 19 10 18 10 18 8 20 8 22 8 22 6 22 4 20 4 20 6 18 6 16 6 16 7 14 7 14 6 14 4 14 2 12 2 12 0 10 0 10 2 10 4 12 4 12 6 12 7 10 7 10 8 8 8 8 10 7 10 7 12 6 12 4 12 4 10 2 10 0 10 0 12 2 12 2 14 4 14 6 14 7 14 7 16 8 16 8 18 6 18 4 18 4 20 4 22 6 22 6 20 8 20 10 20 10 19 12 19 12 20 12 22 12 24 14 24 14 26 16 26 16 24 16 22 14 22 14 20 14 19 16 19 16 18 18 18 18 16 19 16 19 14 20 14 22 14 22 16 24 16 26 16 26 14 24 14"/>
+  <g>
+    <path class="st0" d="M19,12v-2h-1v-2h-2v-1h-2v-1h-2v1h-2v1h-2v2h-1v2h-1v2h1v2h1v2h2v1h2v1h2v-1h2v-1h2v-2h1v-2h1v-2h-1ZM17,14v2h-1v1h-2v1h-2v-1h-2v-1h-1v-2h-1v-2h1v-2h1v-1h2v-1h2v1h2v1h1v2h1v2h-1Z"/>
+    <rect class="st0" x="12" y="10" width="2" height="2"/>
+    <rect class="st0" x="10" y="13" width="2" height="2"/>
+  </g>
+  <rect class="st2" x="13" y="14" width="2" height="2"/>
+</svg>

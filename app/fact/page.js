@@ -19,24 +19,40 @@ function sleep(ms, signal) {
 
 export default function FactPage() {
   const [facts, setFacts] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(null); // 👈 изначально нет факта
   const [text, setText] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const abortRef = useRef(null);
   const lastIndexRef = useRef(-1);
 
-  // загрузка фактов
+  // предзагрузка ассетов (звук + JSON)
   useEffect(() => {
-    fetch("/data/facts.json")
-      .then((r) => r.json())
-      .then((data) => setFacts((Array.isArray(data) ? data : []).map(String)))
-      .finally(() => setLoading(false));
+    const assets = [
+      fetch("/fact/data/facts.json")
+        .then((r) => r.json())
+        .then((data) =>
+          setFacts((Array.isArray(data) ? data : []).map(String))
+        ),
+      loadSound("typewrite", "/fact/sound/typewrite.ogg"),
+    ];
+
+    let loaded = 0;
+    assets.forEach((p) =>
+      p.then(() => {
+        loaded++;
+        setProgress(Math.floor((loaded / assets.length) * 100));
+      })
+    );
+
+    Promise.all(assets).then(() => setReady(true));
+    return () => stopAllSounds();
   }, []);
 
-  // выбор случайного факта
+  // выбираем первый факт только после готовности ассетов
   useEffect(() => {
-    if (facts.length > 0 && currentIndex === 0) {
+    if (ready && facts.length > 0 && currentIndex === null) {
       let next;
       if (facts.length === 1) {
         next = 0;
@@ -48,18 +64,11 @@ export default function FactPage() {
       setCurrentIndex(next);
       lastIndexRef.current = next;
     }
-  }, [facts]);
+  }, [ready, facts, currentIndex]);
 
-  // предзагрузка звука
+  // печать текста (запуск звука + вывод букв)
   useEffect(() => {
-    loadSound("typewrite", "/sound/typewrite.ogg").catch((e) =>
-      console.warn("Ошибка загрузки звука:", e)
-    );
-  }, []);
-
-  // печать текста
-  useEffect(() => {
-    if (!facts.length) return;
+    if (currentIndex === null || !facts.length) return;
 
     if (abortRef.current) abortRef.current.abort();
     const controller = new AbortController();
@@ -69,8 +78,7 @@ export default function FactPage() {
     setText("");
 
     const run = async () => {
-      // ✅ запускаем звук один раз в начале печати
-      const typingLoop = playLoop("typewrite", 0.6);
+      const typingLoop = playLoop("typewrite", 0.6); // звук сразу
 
       for (let i = 0; i < fact.length; i++) {
         if (controller.signal.aborted) {
@@ -87,10 +95,8 @@ export default function FactPage() {
         await sleep(delay, controller.signal);
       }
 
-      // ✅ останавливаем звук после окончания печати
       typingLoop?.stop();
 
-      // пауза → новый факт
       await sleep(5000, controller.signal);
       if (!controller.signal.aborted) {
         setCurrentIndex((prev) => {
@@ -108,11 +114,11 @@ export default function FactPage() {
     run();
     return () => {
       controller.abort();
-      stopAllSounds(); // убиваем все звуки при смене факта
+      stopAllSounds();
     };
-  }, [facts, currentIndex]);
+  }, [currentIndex, facts]);
 
-  if (loading) return <Loader text="Загружаем факты…" />;
+  if (!ready) return <Loader text="Загружаем факты…" progress={progress} />;
 
   return (
     <div className="relative min-h-screen w-full bg-black text-green-400 font-mono flex flex-col items-center justify-center px-4">

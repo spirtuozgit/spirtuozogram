@@ -1,193 +1,158 @@
 "use client";
-
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { loadSound, playSound } from "../utils/audio";
 
-const tiles = [
-  { href: "/horse", label: "Я лошадь?", icon: "/icons/horse_icon.png" },
-  { href: "/pop", label: "Тык", icon: "/icons/pop_icon.png" },
-  { href: "/duck", label: "Крутить уточку", icon: "/icons/duck_icon.png" },
-  { href: "/microbe", label: "Микроб матершинник", icon: "/icons/microbe_icon.png" },
-  { href: "/lenin", label: "Этапы Ленина", icon: "/icons/lenin_icon.png" },
-  { href: "/iss", label: "Где МКС?", icon: "/icons/iss_icon.png" },
-  { href: "/fact", label: "Факты", icon: "/icons/fact_icon.png" },
-  { href: "/doodletest", label: "Дудло-Тест", icon: "/icons/doodle_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-  { href: "#", label: "Скоро", icon: "/icons/soon_icon.png" },
-];
-
-function Tile({ tile }) {
-  return (
-    <Link
-      href={tile.href}
-      className="flex flex-col items-center group w-20"
-      onClick={() => playSound("click")}
-    >
-      <div
-        className="w-20 h-20 rounded-2xl flex items-center justify-center 
-                   shadow-md border border-white/20 overflow-hidden transition-transform 
-                   group-hover:scale-105 bg-gradient-to-br from-gray-600 to-gray-800"
-      >
-        <Image
-          src={tile.icon}
-          alt={tile.label}
-          width={80}
-          height={80}
-          className="w-[90%] h-[90%] object-contain"
-        />
-      </div>
-      <span
-        className="mt-2 text-sm text-gray-200 group-hover:text-white text-center leading-tight break-words"
-      >
-        {tile.label}
-      </span>
-    </Link>
-  );
-}
-
-function AgeCheck({ onYes, onNo }) {
-  const [logoError, setLogoError] = useState(false);
-
-  return (
-    <div className="flex flex-col items-center justify-center h-dvh bg-black text-white text-center p-6">
-      {!logoError ? (
-        <>
-          <Image
-            src="/logo_small.png"
-            alt="SPIRTUOZ logo"
-            width={200}
-            height={60}
-            className="w-[200px] h-auto mb-2"
-            priority
-            onError={() => setLogoError(true)}
-          />
-          <p className="text-sm text-gray-400">spirtuoz.ru</p>
-        </>
-      ) : (
-        <h1 className="text-3xl font-bold mb-2">spirtuoz.ru</h1>
-      )}
-
-      <p className="mt-6 mb-6 text-gray-300 text-base">
-        Ещё не готово, но уже можно посмотреть
-      </p>
-
-      <h2 className="text-2xl mb-6">Вам есть 18 лет?</h2>
-      <div className="flex gap-6">
-        <button
-          onClick={() => {
-            playSound("click");
-            onYes();
-          }}
-          className="px-6 py-2 rounded-xl bg-green-600 hover:bg-green-700 transition"
-        >
-          Да
-        </button>
-        <button
-          onClick={() => {
-            playSound("click");
-            onNo();
-          }}
-          className="px-6 py-2 rounded-xl bg-red-600 hover:bg-red-700 transition"
-        >
-          Нет
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export default function HomePage() {
-  const [ageChecked, setAgeChecked] = useState(false);
-  const [isAdult, setIsAdult] = useState(null);
-  const router = useRouter();
+export default function Menu() {
+  const [layout, setLayout] = useState({ cols: 3, maxWidth: 360 });
+  const [ageConfirmed, setAgeConfirmed] = useState(null); // null = не ответил
 
   useEffect(() => {
-    loadSound("click", "/sound/click.ogg");
-  }, []);
-
-  useEffect(() => {
-    const stored = sessionStorage.getItem("isAdult");
-    if (stored !== null) {
-      setIsAdult(stored === "true");
-      setAgeChecked(true);
-    }
-  }, []);
-
-  if (!ageChecked) {
-    return (
-      <AgeCheck
-        onYes={() => {
-          setIsAdult(true);
-          setAgeChecked(true);
-          sessionStorage.setItem("isAdult", "true");
-        }}
-        onNo={() => {
-          setIsAdult(false);
-          setAgeChecked(true);
-          sessionStorage.setItem("isAdult", "false");
-          router.push("/kids");
-        }}
-      />
+    // загружаем звук клика
+    loadSound("click", "/common/sound/click.ogg").catch(() =>
+      console.warn("Ошибка загрузки click.ogg")
     );
-  }
 
-  if (isAdult === false) {
+    // восстанавливаем выбор возраста из localStorage
+    const saved = localStorage.getItem("ageConfirmed");
+    if (saved === "true") setAgeConfirmed(true);
+    if (saved === "false") window.location.href = "/kids";
+
+    const updateLayout = () => {
+      const portrait = window.innerHeight >= window.innerWidth;
+      if (portrait) {
+        if (window.innerWidth < 360) {
+          setLayout({ cols: 2, maxWidth: 240 });
+        } else {
+          setLayout({ cols: 3, maxWidth: 360 });
+        }
+      } else {
+        setLayout({ cols: 6, maxWidth: 720 });
+      }
+    };
+
+    updateLayout();
+    window.addEventListener("resize", updateLayout);
+    return () => window.removeEventListener("resize", updateLayout);
+  }, []);
+
+  const tiles = [
+    { href: "/horse", label: "Я лошадь?", icon: "/common/icons/horse_icon.png"},
+    { href: "/fact", label: "Факты", icon: "/common/icons/fact_icon.png"},
+    { href: "/duck", label: "Покрути уточку", icon: "/common/icons/duck_icon.png"},
+    { href: "/microbe", label: "Микроб-Матершинник", icon: "/common/icons/microbe_icon.png"},
+    { href: "/doodletest", label: "Дудло-Тест", icon: "/common/icons/doodle_icon.png"},
+    { href: "/pop", label: "Тык-Пык", icon: "/common/icons/pop_icon.png" },    
+    { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
+    { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
+    { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
+  ];
+
+  // --- Экран проверки возраста ---
+  if (ageConfirmed === null) {
     return (
-      <div className="flex items-center justify-center h-dvh bg-black text-white">
-        Переход...
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-4">
+        <h1 className="text-2xl font-bold mb-6">Вам есть 18 лет?</h1>
+        <div className="flex gap-6">
+          <button
+            onClick={() => {
+              setAgeConfirmed(true);
+              localStorage.setItem("ageConfirmed", "true");
+            }}
+            className="px-6 py-3 bg-green-600 rounded-lg hover:bg-green-700 transition"
+          >
+            Да
+          </button>
+          <button
+            onClick={() => {
+              localStorage.setItem("ageConfirmed", "false");
+              window.location.href = "/kids";
+            }}
+            className="px-6 py-3 bg-red-600 rounded-lg hover:bg-red-700 transition"
+          >
+            Нет
+          </button>
+        </div>
       </div>
     );
   }
 
+  // --- Если возраст подтверждён → меню ---
   return (
-    <main className="homepage relative h-dvh w-screen bg-black text-white flex flex-col items-center">
-      <div className="flex flex-col items-center mt-6 mb-6 z-10">
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      {/* Логотип */}
+      <div className="flex-shrink-0 flex flex-col items-center py-3 px-2">
         <Image
           src="/logo_small.png"
           alt="SPIRTUOZGRAM logo"
-          width={400}
-          height={120}
-          className="w-[300px] sm:w-[400px] h-auto mb-1"
+          width={280}
+          height={90}
+          className="w-[55vw] max-w-[300px] h-auto mb-2"
           priority
         />
-        <p className="text-sm text-gray-400 leading-tight">
+        <p className="text-[10px] sm:text-xs text-gray-400 leading-tight mb-2 text-center">
           Самая полезная информация на все случаи жизни
         </p>
       </div>
 
-      <div
-        className="relative z-10 w-fit mx-auto px-4 py-6 
-                   rounded-3xl 
-                   bg-gradient-to-r from-white/10 to-white/5 
-                   backdrop-blur-xl 
-                   border border-white/20 
-                   shadow-[0_8px_32px_rgba(0,0,0,0.37)]"
-      >
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
-          {tiles.map((tile, i) => (
-            <Tile key={i} tile={tile} />
-          ))}
+      {/* Сетка плиток */}
+      <div className="flex-1 overflow-y-auto px-2">
+        <div
+          className="grid mx-auto"
+          style={{
+            gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
+            gap: "8px",
+            maxWidth: `${layout.maxWidth}px`,
+          }}
+        >
+          {tiles.map((tile, index) =>
+            tile.disabled ? (
+              <div
+                key={`disabled-${index}`}
+                className="flex flex-col items-center justify-center text-gray-500 opacity-60"
+              >
+                <img
+                  src={tile.icon}
+                  alt={tile.label}
+                  style={{ width: "100px", height: "100px" }}
+                />
+                <span className="mt-1 text-[10px] sm:text-xs text-center break-words">
+                  {tile.label}
+                </span>
+              </div>
+            ) : (
+              <Link
+                key={`tile-${index}`}
+                href={tile.href}
+                onClick={() => playSound("click")}
+                className="flex flex-col items-center justify-center"
+              >
+                <img
+                  src={tile.icon}
+                  alt={tile.label}
+                  style={{ width: "100px", height: "100px" }}
+                />
+                <span className="mt-1 text-[10px] sm:text-xs text-center break-words">
+                  {tile.label}
+                </span>
+              </Link>
+            )
+          )}
         </div>
       </div>
 
-      <div className="mt-6 z-10 text-center text-gray-500 text-sm">
+      {/* Футер */}
+      <div className="flex-shrink-0 text-center text-gray-500 text-[9px] sm:text-[10px] md:text-xs pb-[env(safe-area-inset-bottom)] py-2">
         <a
           href="https://t.me/dimaspirtuoz"
           target="_blank"
           rel="noopener noreferrer"
-          className="hover:text-white transition-colors"
+          className="hover:underline"
         >
           t.me/dimaspirtuoz
         </a>
       </div>
-    </main>
+    </div>
   );
 }

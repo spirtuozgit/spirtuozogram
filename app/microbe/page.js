@@ -3,13 +3,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { playSound, loadSound } from "../../utils/audio"; // ✅ новый менеджер звука
-
-/* === ПАРАМЕТРЫ === */
-const CELL = 4;
-const ANIMATION_SPEED = 400;
-const MOVE_SPEED = 4; 
-const EAT_RADIUS = 12;
+import { playSound, loadSound, stopAllSounds } from "../../utils/audio";
+import { CELL, ANIMATION_SPEED, MOVE_SPEED, EAT_RADIUS, PHRASES } from "./data";
 
 export default function MicrobeGame() {
   const [food, setFood] = useState([]);
@@ -17,45 +12,86 @@ export default function MicrobeGame() {
   const [score, setScore] = useState(0);
   const [microbe, setMicrobe] = useState({ x: 128, y: 128 });
   const [frame, setFrame] = useState(0);
-  const [done, setDone] = useState(false);
 
-  const [phrases, setPhrases] = useState([]);
+  const [ready, setReady] = useState(false);
+  const [progress, setProgress] = useState(0);
+
   const [bubbles, setBubbles] = useState([]);
+  const [oopsShake, setOopsShake] = useState(false);
 
-  const frames = ["/sprites/microbe_frame_1.svg", "/sprites/microbe_frame_2.svg"];
+  const frames = [
+    "/microbe/sprites/microbe_frame_1.svg",
+    "/microbe/sprites/microbe_frame_2.svg",
+  ];
 
-  /* === Загрузка звуков и фраз === */
+  /* === Предзагрузка ассетов с прогрессом === */
   useEffect(() => {
-    const load = async () => {
-      // загружаем звук через новый менеджер
-      await loadSound("hroom", "/sound/hroom.ogg");
+    const assets = [
+      ...frames.map(
+        (src) =>
+          new Promise((resolve) => {
+            const img = new Image();
+            img.onload = resolve;
+            img.onerror = resolve;
+            img.src = src;
+          })
+      ),
+      loadSound("hroom", "/microbe/sound/hroom.ogg"),
+      loadSound("oops", "/microbe/sound/oops.ogg"),
+    ];
 
-      try {
-        const res = await fetch("/data/phrases.json");
-        const json = await res.json();
-        setPhrases(json);
-      } catch (err) {
-        console.error("Ошибка загрузки фраз:", err);
-      }
+    let loaded = 0;
+    assets.forEach((p) =>
+      p.then(() => {
+        loaded++;
+        setProgress(Math.floor((loaded / assets.length) * 100));
+      })
+    );
 
-      setDone(true);
-    };
-    load();
+    Promise.all(assets).then(() => setReady(true));
+
+    return () => stopAllSounds();
   }, []);
 
   /* === Анимация кадров === */
   useEffect(() => {
+    if (!ready) return;
     const id = setInterval(() => {
       setFrame((f) => (f + 1) % frames.length);
     }, ANIMATION_SPEED);
     return () => clearInterval(id);
-  }, []);
+  }, [ready]);
 
-  /* === Клик → еда === */
-  const handleClick = (e) => {
+  /* === Тап/клик === */
+  const handlePointerDown = (e) => {
+    if (!ready) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const gx = Math.floor((e.clientX - rect.left) / CELL) * CELL;
-    const gy = Math.floor((e.clientY - rect.top) / CELL) * CELL;
+
+    const clientX = e.clientX ?? (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY ?? (e.touches && e.touches[0].clientY);
+
+    // проверка: тап по микробу?
+    const microbeHalf = 32;
+    const inMicrobe =
+      clientX >= microbe.x - microbeHalf &&
+      clientX <= microbe.x + microbeHalf &&
+      clientY >= microbe.y - microbeHalf &&
+      clientY <= microbe.y + microbeHalf;
+
+    if (inMicrobe) {
+      playSound("oops");
+      setOopsShake(true);
+      setTimeout(() => setOopsShake(false), 400);
+      return;
+    }
+
+    // создаём еду с ограничением на повтор
+    const gx = Math.floor((clientX - rect.left) / CELL) * CELL;
+    const gy = Math.floor((clientY - rect.top) / CELL) * CELL;
+
+    // проверка: нет ли уже еды в этих координатах?
+    const exists = food.some((f) => f.x === gx && f.y === gy && !f.eaten);
+    if (exists) return;
 
     const id = Date.now();
     setFood((prev) => [...prev, { id, x: gx, y: gy, eaten: false }]);
@@ -68,6 +104,7 @@ export default function MicrobeGame() {
 
   /* === Движение и поедание === */
   useEffect(() => {
+    if (!ready) return;
     const interval = setInterval(() => {
       if (food.length === 0) return;
 
@@ -101,35 +138,36 @@ export default function MicrobeGame() {
           setFood((prevFood) => prevFood.filter((f) => f.id !== nearest.id));
           setScore((s) => s + 1);
 
-          playSound("hroom"); // ✅ новое воспроизведение
+          playSound("hroom");
 
-          if (phrases.length > 0) {
-            const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-            const bubbleId = `${Date.now()}-${Math.random()}`;
+          const phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)];
+          const bubbleId = `${Date.now()}-${Math.random()}`;
 
-            let offsetX, offsetY;
-            const radius = 40;
-            let tries = 0;
-            do {
-              const a = Math.random() * 2 * Math.PI;
-              offsetX = Math.cos(a) * radius;
-              offsetY = Math.sin(a) * radius - 20;
-              tries++;
-            } while (
-              bubbles.some(
-                (b) => Math.hypot(b.offsetX - offsetX, b.offsetY - offsetY) < 40
-              ) &&
-              tries < 10
+          let offsetX, offsetY;
+          let tries = 0;
+          let ok = false;
+          const baseRadius = 60;
+
+          do {
+            const radius = baseRadius + Math.random() * 30;
+            const a = Math.random() * 2 * Math.PI;
+            offsetX = Math.cos(a) * radius;
+            offsetY = Math.sin(a) * radius - 20;
+
+            ok = !bubbles.some(
+              (b) => Math.hypot(b.offsetX - offsetX, b.offsetY - offsetY) < 50
             );
 
-            setBubbles((prev) => [
-              ...prev,
-              { id: bubbleId, text: phrase, offsetX, offsetY },
-            ]);
-            setTimeout(() => {
-              setBubbles((prev) => prev.filter((b) => b.id !== bubbleId));
-            }, 2000);
-          }
+            tries++;
+          } while (!ok && tries < 40);
+
+          setBubbles((prev) => [
+            ...prev,
+            { id: bubbleId, text: phrase, offsetX, offsetY },
+          ]);
+          setTimeout(() => {
+            setBubbles((prev) => prev.filter((b) => b.id !== bubbleId));
+          }, 2000);
         }
 
         return { x, y };
@@ -137,21 +175,22 @@ export default function MicrobeGame() {
     }, 60);
 
     return () => clearInterval(interval);
-  }, [food, phrases, bubbles]);
+  }, [food, bubbles, ready]);
 
-  if (!done) return <Loader done={done} />;
+  /* === Loader === */
+  if (!ready) return <Loader text="Загрузка..." progress={progress} />;
 
   return (
     <div
-      className="w-screen min-h-screen bg-black relative overflow-hidden select-none"
-      onClick={handleClick}
+      className="w-screen min-h-[100dvh] bg-black relative overflow-hidden select-none touch-none"
+      onPointerDown={handlePointerDown}
     >
-      {/* Счёт (фиксированный сверху) */}
+      {/* Счёт */}
       <div className="fixed top-4 left-1/2 -translate-x-1/2 px-6 py-2 rounded-xl backdrop-blur-md bg-white/10 text-white text-lg font-bold shadow-md z-50">
         {score}
       </div>
 
-      {/* Назад (фиксированный крестик) */}
+      {/* Назад */}
       <Link
         href="/"
         className="fixed top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition z-50"
@@ -163,7 +202,7 @@ export default function MicrobeGame() {
       {food.map((f) => (
         <div
           key={f.id}
-          className="absolute bg-white"
+          className="absolute bg-white animate-food"
           style={{ left: f.x, top: f.y, width: CELL, height: CELL }}
         />
       ))}
@@ -188,7 +227,7 @@ export default function MicrobeGame() {
 
       {/* Микроб */}
       <div
-        className="absolute"
+        className={`absolute ${oopsShake ? "animate-shake" : ""}`}
         style={{
           left: microbe.x,
           top: microbe.y,
@@ -227,6 +266,21 @@ export default function MicrobeGame() {
           100% { opacity: 0; transform: translate(-50%, -90%) scale(1.1); }
         }
         .animate-fadeUp { animation: fadeUp 2s ease-out forwards; }
+
+        @keyframes shake {
+          0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+          20% { transform: translate(-50%, -50%) rotate(-10deg) scale(1.1); }
+          40% { transform: translate(-50%, -50%) rotate(10deg) scale(1.1); }
+          60% { transform: translate(-50%, -50%) rotate(-6deg) scale(1.05); }
+          80% { transform: translate(-50%, -50%) rotate(6deg) scale(1.05); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+
+        @keyframes foodIn {
+          0% { transform: scale(0); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-food { animation: foodIn 0.2s ease-out; }
 
         @keyframes pixel1 { from { transform: translate(0,0); opacity:1; } to { transform: translate(0,-12px); opacity:0; } }
         @keyframes pixel2 { from { transform: translate(0,0); opacity:1; } to { transform: translate(0,12px); opacity:0; } }
