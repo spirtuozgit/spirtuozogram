@@ -1,55 +1,87 @@
+// utils/audio.js
+let context;
 const sounds = {};
 const loops = {};
 
-export async function loadSound(key, url) {
-  return new Promise((resolve, reject) => {
-    const audio = new Audio(url);
-    audio.preload = "auto";
-    audio.oncanplaythrough = () => {
-      sounds[key] = audio;
-      resolve(audio);
+function getContext() {
+  if (!context) {
+    context = new (window.AudioContext || window.webkitAudioContext)();
+    // Разбудить контекст при первом тапе
+    const resume = () => {
+      if (context.state === "suspended") {
+        context.resume();
+      }
+      document.removeEventListener("touchstart", resume);
+      document.removeEventListener("click", resume);
     };
-    audio.onerror = reject;
-  });
+    document.addEventListener("touchstart", resume, { once: true });
+    document.addEventListener("click", resume, { once: true });
+  }
+  return context;
 }
 
+// === Загрузка звука ===
+export async function loadSound(key, url) {
+  const ctx = getContext();
+  const res = await fetch(url);
+  const arrayBuffer = await res.arrayBuffer();
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+  sounds[key] = audioBuffer;
+  return audioBuffer;
+}
+
+// === Одноразовое воспроизведение ===
 export function playSound(key, volume = 1.0) {
-  if (!sounds[key]) return;
-  const clone = sounds[key].cloneNode();
-  clone.volume = volume;
-  clone.play().catch(() => {});
-  return clone;
+  const ctx = getContext();
+  const buffer = sounds[key];
+  if (!buffer) return;
+
+  const source = ctx.createBufferSource();
+  const gainNode = ctx.createGain();
+
+  source.buffer = buffer;
+  source.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  gainNode.gain.value = volume;
+
+  source.start(0);
+  return source;
 }
 
+// === Зацикленное воспроизведение ===
 export function playLoop(key, volume = 1.0) {
-  if (!sounds[key]) return null;
-  const audio = sounds[key].cloneNode();
-  audio.volume = volume;
-  audio.loop = true;
-  audio.play().catch(() => {});
-  loops[key] = audio;
+  const ctx = getContext();
+  const buffer = sounds[key];
+  if (!buffer) return null;
+
+  const source = ctx.createBufferSource();
+  const gainNode = ctx.createGain();
+
+  source.buffer = buffer;
+  source.loop = true;
+  source.connect(gainNode);
+  gainNode.connect(ctx.destination);
+  gainNode.gain.value = volume;
+
+  source.start(0);
+  loops[key] = { source, gainNode };
+
   return {
     stop: () => {
-      audio.pause();
-      audio.currentTime = 0;
+      try {
+        source.stop();
+      } catch {}
       delete loops[key];
     },
   };
 }
 
+// === Остановка всех звуков ===
 export function stopAllSounds() {
-  Object.values(loops).forEach((a) => {
-    if (a?.pause) {
-      a.pause();
-      a.currentTime = 0;
-    }
-  });
-  for (const k in loops) delete loops[k];
-
-  Object.values(sounds).forEach((a) => {
+  Object.keys(loops).forEach((key) => {
     try {
-      a.pause();
-      a.currentTime = 0;
+      loops[key].source.stop();
     } catch {}
+    delete loops[key];
   });
 }
