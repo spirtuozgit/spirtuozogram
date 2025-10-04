@@ -93,7 +93,7 @@ export default function Menu() {
           priority
         />
         <p className="text-[10px] sm:text-xs text-gray-400 leading-tight mb-2 text-center">
-          Самая полезная информация на все случаи жизни
+          Самая полезная информация на все случаи жизни 0.0.1
         </p>
       </div>
 
