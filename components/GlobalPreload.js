@@ -6,13 +6,14 @@ export default function GlobalPreload() {
   useEffect(() => {
     const handler = () => {
       unlockAudio();
+      console.info("🎧 AudioContext activated by user gesture");
       document.removeEventListener("touchstart", handler);
     };
     document.addEventListener("touchstart", handler, { once: true });
 
-    // загружаем звук клика
+    // заранее подгружаем базовые клики
     loadSound("click", "/common/sound/click");
   }, []);
 
-    return null;
+  return null;
 }
