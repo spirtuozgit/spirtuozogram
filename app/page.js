@@ -6,19 +6,20 @@ import { loadSound, playSound } from "../utils/audio";
 
 export default function Menu() {
   const [layout, setLayout] = useState({ cols: 3, maxWidth: 360 });
-  const [ageConfirmed, setAgeConfirmed] = useState(null); // null = не ответил
+  const [ageConfirmed, setAgeConfirmed] = useState(null);
 
   useEffect(() => {
-    // загружаем звук клика
-    loadSound("click", "/common/sound/click.ogg").catch(() =>
-      console.warn("Ошибка загрузки click.ogg")
+    // ✅ Загружаем звук клика (автоматически выберет .m4a на iOS/Android, .ogg на остальных)
+    loadSound("click", "/common/sound/click").catch(() =>
+      console.warn("Ошибка загрузки click")
     );
 
-    // восстанавливаем выбор возраста из localStorage
+    // Восстанавливаем выбор возраста
     const saved = localStorage.getItem("ageConfirmed");
     if (saved === "true") setAgeConfirmed(true);
     if (saved === "false") window.location.href = "/kids";
 
+    // Адаптивная сетка
     const updateLayout = () => {
       const portrait = window.innerHeight >= window.innerWidth;
       if (portrait) {
@@ -38,12 +39,12 @@ export default function Menu() {
   }, []);
 
   const tiles = [
-    { href: "/horse", label: "Я лошадь?", icon: "/common/icons/horse_icon.png"},
-    { href: "/fact", label: "Факты", icon: "/common/icons/fact_icon.png"},
-    { href: "/duck", label: "Покрути уточку", icon: "/common/icons/duck_icon.png"},
-    { href: "/microbe", label: "Микроб-Матершинник", icon: "/common/icons/microbe_icon.png"},
-    { href: "/doodletest", label: "Дудло-Тест", icon: "/common/icons/doodle_icon.png"},
-    { href: "/pop", label: "Тык-Пык", icon: "/common/icons/pop_icon.png" },    
+    { href: "/horse", label: "Я лошадь?", icon: "/common/icons/horse_icon.png" },
+    { href: "/fact", label: "Факты", icon: "/common/icons/fact_icon.png" },
+    { href: "/duck", label: "Покрути уточку", icon: "/common/icons/duck_icon.png" },
+    { href: "/microbe", label: "Микроб-Матершинник", icon: "/common/icons/microbe_icon.png" },
+    { href: "/doodletest", label: "Дудло-Тест", icon: "/common/icons/doodle_icon.png" },
+    { href: "/pop", label: "Тык-Пык", icon: "/common/icons/pop_icon.png" },
     { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
     { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
     { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
@@ -78,7 +79,7 @@ export default function Menu() {
     );
   }
 
-  // --- Если возраст подтверждён → меню ---
+  // --- Основное меню ---
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Логотип */}

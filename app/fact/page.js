@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import FooterLink from "../../components/FooterLink";
 import Loader from "../../components/Loader";
-import { loadSound, playLoop, stopAllSounds } from "../../utils/audio";
+import { loadSound, playLoop, stopAllSounds, unlockAudio } from "../../utils/audio";
 
 function sleep(ms, signal) {
   return new Promise((resolve) => {
@@ -19,7 +19,7 @@ function sleep(ms, signal) {
 
 export default function FactPage() {
   const [facts, setFacts] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(null); // 👈 изначально нет факта
+  const [currentIndex, setCurrentIndex] = useState(null);
   const [text, setText] = useState("");
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -27,7 +27,7 @@ export default function FactPage() {
   const abortRef = useRef(null);
   const lastIndexRef = useRef(-1);
 
-  // предзагрузка ассетов (звук + JSON)
+  /* === Предзагрузка звука и данных === */
   useEffect(() => {
     const assets = [
       fetch("/fact/data/facts.json")
@@ -35,7 +35,8 @@ export default function FactPage() {
         .then((data) =>
           setFacts((Array.isArray(data) ? data : []).map(String))
         ),
-      loadSound("typewrite", "/fact/sound/typewrite.ogg"),
+      // ✅ без расширения: выберет .m4a на iOS/Android
+      loadSound("typewrite", "/fact/sound/typewrite"),
     ];
 
     let loaded = 0;
@@ -50,7 +51,16 @@ export default function FactPage() {
     return () => stopAllSounds();
   }, []);
 
-  // выбираем первый факт только после готовности ассетов
+  /* === Разблокировка аудио на первом касании (iOS fix) === */
+  useEffect(() => {
+    const handler = () => {
+      unlockAudio();
+      document.removeEventListener("touchstart", handler);
+    };
+    document.addEventListener("touchstart", handler, { once: true });
+  }, []);
+
+  /* === Выбор первого факта === */
   useEffect(() => {
     if (ready && facts.length > 0 && currentIndex === null) {
       let next;
@@ -66,7 +76,7 @@ export default function FactPage() {
     }
   }, [ready, facts, currentIndex]);
 
-  // печать текста (запуск звука + вывод букв)
+  /* === Эффект печати === */
   useEffect(() => {
     if (currentIndex === null || !facts.length) return;
 
@@ -78,7 +88,8 @@ export default function FactPage() {
     setText("");
 
     const run = async () => {
-      const typingLoop = playLoop("typewrite", 0.6); // звук сразу
+      // ✅ звук запускается сразу и непрерывно
+      const typingLoop = playLoop("typewrite", 0.6);
 
       for (let i = 0; i < fact.length; i++) {
         if (controller.signal.aborted) {
@@ -118,11 +129,20 @@ export default function FactPage() {
     };
   }, [currentIndex, facts]);
 
+  /* === Loader === */
   if (!ready) return <Loader text="Загружаем факты…" progress={progress} />;
 
   return (
     <div className="relative min-h-screen w-full bg-black text-green-400 font-mono flex flex-col items-center justify-center px-4">
-      {/* крестик */}
+      {/* Кнопка разблокировки звука */}
+      <button
+        onClick={() => unlockAudio()}
+        className="fixed top-4 left-6 text-2xl sm:text-3xl font-bold text-white hover:text-green-400 transition z-50"
+      >
+        🔊
+      </button>
+
+      {/* Крестик */}
       <button
         onClick={() => {
           stopAllSounds();
@@ -133,13 +153,13 @@ export default function FactPage() {
         ✕
       </button>
 
-      {/* текст */}
+      {/* Текст */}
       <div className="max-w-3xl px-2 text-center text-base sm:text-lg md:text-xl lg:text-2xl leading-relaxed -translate-y-8">
         <span className="whitespace-pre-line break-words">{text}</span>
         <span className="inline-block w-1.5 sm:w-2 h-4 sm:h-6 bg-green-400 ml-1 animate-pulse align-baseline" />
       </div>
 
-      {/* футер */}
+      {/* Футер */}
       <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
         <FooterLink />
       </div>

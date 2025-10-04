@@ -1,28 +1,31 @@
 "use client";
 import { useEffect } from "react";
-import { stopAllSounds } from "../utils/audio";
+import { stopAllSounds, unlockAudio } from "../utils/audio";
 
 /**
  * Клиентская обёртка для RootLayout.
- * Здесь следим за сменой маршрутов и выгружаем все звуки.
+ * Управляет поведением звука при смене страниц и фокусе вкладки.
  */
 export default function LayoutClient({ children }) {
   useEffect(() => {
-    const handleRouteChange = () => {
-      stopAllSounds(); // глушим все звуки при смене страницы
-    };
+    const handleRouteChange = () => stopAllSounds();
 
-    // Слушаем события истории (работают в App Router)
+    // События навигации
     window.addEventListener("popstate", handleRouteChange);
     window.addEventListener("hashchange", handleRouteChange);
-
-    // Дополнительно глушим звуки при закрытии вкладки/обновлении страницы
     window.addEventListener("beforeunload", handleRouteChange);
+
+    // 🔄 Восстанавливаем AudioContext при возврате во вкладку
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") unlockAudio();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
       window.removeEventListener("popstate", handleRouteChange);
       window.removeEventListener("hashchange", handleRouteChange);
       window.removeEventListener("beforeunload", handleRouteChange);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, []);
 

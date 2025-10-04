@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { playSound, loadSound, stopAllSounds } from "../../utils/audio";
+import { playSound, loadSound, stopAllSounds, unlockAudio } from "../../utils/audio";
 import { NODES, BUTTONS } from "./data";
 import confetti from "canvas-confetti";
 
@@ -25,11 +25,12 @@ export default function HorseGame() {
   const nodeRefs = useRef({});
   const containerRef = useRef(null);
 
-  // Предзагрузка ресурсов
+  /* === Предзагрузка ресурсов === */
   useEffect(() => {
     const assets = [
-      loadSound("reset", "/horse/sound/reset.ogg"),
-      loadSound("click", "/common/sound/click.ogg"),
+      // универсальные пути без расширений
+      loadSound("reset", "/horse/sound/reset"),
+      loadSound("click", "/common/sound/click"),
       ...HORSE_FRAMES.map(
         (src) =>
           new Promise((resolve) => {
@@ -65,14 +66,23 @@ export default function HorseGame() {
     return () => stopAllSounds();
   }, []);
 
-  // Анимация кадров
+  /* === Разблокировка звука при первом касании === */
+  useEffect(() => {
+    const handler = () => {
+      unlockAudio();
+      document.removeEventListener("touchstart", handler);
+    };
+    document.addEventListener("touchstart", handler, { once: true });
+  }, []);
+
+  /* === Анимация кадров === */
   useEffect(() => {
     if (!ready) return;
     const id = setInterval(() => setFrame((f) => (f + 1) % HORSE_FRAMES.length), ANIMATION_SPEED);
     return () => clearInterval(id);
   }, [ready]);
 
-  // Движение лошадей
+  /* === Движение лошадей === */
   useEffect(() => {
     if (!ready) return;
     const interval = setInterval(() => {
@@ -97,14 +107,14 @@ export default function HorseGame() {
     return () => clearInterval(interval);
   }, [ready]);
 
-  // Автоскролл
+  /* === Автоскролл к активному узлу === */
   useEffect(() => {
     const lastId = activeNodes[activeNodes.length - 1];
     const el = nodeRefs.current[lastId];
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [activeNodes]);
 
-  // Обновление линий
+  /* === Линии между узлами === */
   useEffect(() => {
     if (!containerRef.current) return;
     const newLines = [];
@@ -128,6 +138,7 @@ export default function HorseGame() {
     setLines(newLines);
   }, [activeNodes, ready]);
 
+  /* === Добавление узлов === */
   const addNode = (from, to, label) => {
     playSound("click");
     if (chosen[from]) return;
@@ -146,6 +157,7 @@ export default function HorseGame() {
     }
   };
 
+  /* === Перезапуск теста === */
   const restart = () => {
     playSound("reset");
     setActiveNodes(["start"]);
@@ -154,10 +166,20 @@ export default function HorseGame() {
     setLines([]);
   };
 
-  if (!ready) return <Loader text="Загрузка игры..." progress={progress} />;
+  /* === Loader === */
+  if (!ready) return <Loader text="Загружаем лошадей..." progress={progress} />;
 
   return (
     <div className="min-h-[100dvh] bg-black text-white flex flex-col items-center p-4 sm:p-6 relative overflow-hidden">
+      {/* Кнопка звука */}
+      <button
+        onClick={() => unlockAudio()}
+        className="fixed top-4 left-6 text-2xl sm:text-3xl font-bold text-white hover:text-green-400 transition z-40"
+      >
+        🔊
+      </button>
+
+      {/* Кнопка выхода */}
       <Link
         href="/"
         onClick={() => stopAllSounds()}
@@ -171,6 +193,7 @@ export default function HorseGame() {
         наиболее точный психологический тест
       </p>
 
+      {/* Лошади */}
       {horses.map((h) => (
         <div
           key={h.id}
@@ -181,10 +204,15 @@ export default function HorseGame() {
             transform: `translate(-50%, -50%) scaleX(${h.dir === 1 ? 1 : -1})`,
           }}
         >
-          <img src={HORSE_FRAMES[frame]} alt="horse" className="w-12 sm:w-16 md:w-20 lg:w-24 h-auto" />
+          <img
+            src={HORSE_FRAMES[frame]}
+            alt="horse"
+            className="w-12 sm:w-16 md:w-20 lg:w-24 h-auto"
+          />
         </div>
       ))}
 
+      {/* Диаграмма теста */}
       <div
         ref={containerRef}
         className="relative z-10 w-full max-w-2xl mx-auto pb-32 flex flex-col items-center gap-6"
@@ -255,6 +283,7 @@ export default function HorseGame() {
         })}
       </div>
 
+      {/* Футер */}
       <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
         <FooterLink />
       </div>

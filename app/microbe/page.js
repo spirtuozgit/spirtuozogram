@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { playSound, loadSound, stopAllSounds } from "../../utils/audio";
+import { playSound, loadSound, stopAllSounds, unlockAudio } from "../../utils/audio";
 import { CELL, ANIMATION_SPEED, MOVE_SPEED, EAT_RADIUS, PHRASES } from "./data";
 
 export default function MicrobeGame() {
@@ -12,10 +12,8 @@ export default function MicrobeGame() {
   const [score, setScore] = useState(0);
   const [microbe, setMicrobe] = useState({ x: 128, y: 128 });
   const [frame, setFrame] = useState(0);
-
   const [ready, setReady] = useState(false);
   const [progress, setProgress] = useState(0);
-
   const [bubbles, setBubbles] = useState([]);
   const [oopsShake, setOopsShake] = useState(false);
 
@@ -36,8 +34,9 @@ export default function MicrobeGame() {
             img.src = src;
           })
       ),
-      loadSound("hroom", "/microbe/sound/hroom.ogg"),
-      loadSound("oops", "/microbe/sound/oops.ogg"),
+      // ✅ теперь без расширения: выберет .m4a на iOS/Android, .ogg на остальных
+      loadSound("hroom", "/microbe/sound/hroom"),
+      loadSound("oops", "/microbe/sound/oops"),
     ];
 
     let loaded = 0;
@@ -49,8 +48,16 @@ export default function MicrobeGame() {
     );
 
     Promise.all(assets).then(() => setReady(true));
-
     return () => stopAllSounds();
+  }, []);
+
+  /* === Разблокировка аудио при первом касании === */
+  useEffect(() => {
+    const handler = () => {
+      unlockAudio();
+      document.removeEventListener("touchstart", handler);
+    };
+    document.addEventListener("touchstart", handler, { once: true });
   }, []);
 
   /* === Анимация кадров === */
@@ -62,7 +69,7 @@ export default function MicrobeGame() {
     return () => clearInterval(id);
   }, [ready]);
 
-  /* === Тап/клик === */
+  /* === Клик / Тап === */
   const handlePointerDown = (e) => {
     if (!ready) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -70,7 +77,6 @@ export default function MicrobeGame() {
     const clientX = e.clientX ?? (e.touches && e.touches[0].clientX);
     const clientY = e.clientY ?? (e.touches && e.touches[0].clientY);
 
-    // проверка: тап по микробу?
     const microbeHalf = 32;
     const inMicrobe =
       clientX >= microbe.x - microbeHalf &&
@@ -85,21 +91,16 @@ export default function MicrobeGame() {
       return;
     }
 
-    // создаём еду с ограничением на повтор
+    // создаём еду (не дублируем)
     const gx = Math.floor((clientX - rect.left) / CELL) * CELL;
     const gy = Math.floor((clientY - rect.top) / CELL) * CELL;
 
-    // проверка: нет ли уже еды в этих координатах?
-    const exists = food.some((f) => f.x === gx && f.y === gy && !f.eaten);
-    if (exists) return;
+    if (food.some((f) => f.x === gx && f.y === gy && !f.eaten)) return;
 
     const id = Date.now();
     setFood((prev) => [...prev, { id, x: gx, y: gy, eaten: false }]);
-
     setExplosions((prev) => [...prev, { id, x: gx, y: gy }]);
-    setTimeout(() => {
-      setExplosions((prev) => prev.filter((ex) => ex.id !== id));
-    }, 400);
+    setTimeout(() => setExplosions((prev) => prev.filter((ex) => ex.id !== id)), 400);
   };
 
   /* === Движение и поедание === */
@@ -118,7 +119,6 @@ export default function MicrobeGame() {
         });
 
         const dist = Math.hypot(x - nearest.x, y - nearest.y);
-
         const speed = Math.max(
           MOVE_SPEED * 0.5,
           Math.min(MOVE_SPEED + dist / 80, MOVE_SPEED * 3)
@@ -132,32 +132,28 @@ export default function MicrobeGame() {
         x += Math.cos(curveAngle) * speed;
         y += Math.sin(curveAngle) * speed;
 
-        // Поедание
+        // === Поедание ===
         if (dist < EAT_RADIUS && !nearest.eaten) {
           nearest.eaten = true;
           setFood((prevFood) => prevFood.filter((f) => f.id !== nearest.id));
           setScore((s) => s + 1);
-
           playSound("hroom");
 
           const phrase = PHRASES[Math.floor(Math.random() * PHRASES.length)];
           const bubbleId = `${Date.now()}-${Math.random()}`;
-
+          const baseRadius = 60;
           let offsetX, offsetY;
           let tries = 0;
           let ok = false;
-          const baseRadius = 60;
 
           do {
             const radius = baseRadius + Math.random() * 30;
             const a = Math.random() * 2 * Math.PI;
             offsetX = Math.cos(a) * radius;
             offsetY = Math.sin(a) * radius - 20;
-
             ok = !bubbles.some(
               (b) => Math.hypot(b.offsetX - offsetX, b.offsetY - offsetY) < 50
             );
-
             tries++;
           } while (!ok && tries < 40);
 
@@ -165,9 +161,10 @@ export default function MicrobeGame() {
             ...prev,
             { id: bubbleId, text: phrase, offsetX, offsetY },
           ]);
-          setTimeout(() => {
-            setBubbles((prev) => prev.filter((b) => b.id !== bubbleId));
-          }, 2000);
+          setTimeout(
+            () => setBubbles((prev) => prev.filter((b) => b.id !== bubbleId)),
+            2000
+          );
         }
 
         return { x, y };
@@ -178,7 +175,7 @@ export default function MicrobeGame() {
   }, [food, bubbles, ready]);
 
   /* === Loader === */
-  if (!ready) return <Loader text="Загрузка..." progress={progress} />;
+  if (!ready) return <Loader text="Загрузка микроба..." progress={progress} />;
 
   return (
     <div
@@ -190,9 +187,18 @@ export default function MicrobeGame() {
         {score}
       </div>
 
+      {/* Кнопка звука */}
+      <button
+        onClick={() => unlockAudio()}
+        className="fixed top-4 left-6 text-2xl sm:text-3xl font-bold text-white hover:text-green-400 transition z-50"
+      >
+        🔊
+      </button>
+
       {/* Назад */}
       <Link
         href="/"
+        onClick={() => stopAllSounds()}
         className="fixed top-4 right-6 text-white text-2xl font-bold hover:text-red-400 transition z-50"
       >
         ✕
@@ -259,6 +265,7 @@ export default function MicrobeGame() {
         <FooterLink />
       </div>
 
+      {/* Анимации */}
       <style jsx>{`
         @keyframes fadeUp {
           0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }

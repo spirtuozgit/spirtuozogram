@@ -5,11 +5,11 @@ import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Html } from "@react-three/drei";
 import Loader from "../../components/Loader";
 import FooterLink from "../../components/FooterLink";
-import { loadSound, playSound, stopAllSounds } from "../../utils/audio";
+import { loadSound, playSound, stopAllSounds, unlockAudio } from "../../utils/audio";
 
 // ---------- Утка ----------
 function Duck({ onQuack, rotationY }) {
-  const { scene } = useGLTF("/duck/models/duck.glb"); // 👈 путь в папку игры
+  const { scene } = useGLTF("/duck/models/duck.glb");
   return (
     <group position={[0, 0, 0]} rotation={[0, rotationY, 0]} scale={1}>
       <primitive object={scene} onPointerDown={onQuack} />
@@ -26,15 +26,16 @@ export default function DuckPage() {
   const [quacks, setQuacks] = useState([]);
   const idCounter = useRef(0);
 
-  // ---------- предзагрузка ассетов ----------
+  /* === Предзагрузка ассетов === */
   useEffect(() => {
     const assets = [
-      loadSound("quack", "/duck/sound/quack.ogg"),
+      // ✅ универсальный путь: .m4a на iOS/Android, .ogg на остальных
+      loadSound("quack", "/duck/sound/quack"),
       new Promise((resolve) => {
-        const loader = new Image();
-        loader.onload = resolve;
-        loader.onerror = resolve;
-        loader.src = "/duck/preview.png"; // 👈 можно любую картинку-заглушку, чтобы прогресс считать
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = resolve;
+        img.src = "/duck/preview.png";
       }),
     ];
 
@@ -50,7 +51,16 @@ export default function DuckPage() {
     return () => stopAllSounds();
   }, []);
 
-  // ---------- звук + надпись "Кря" ----------
+  /* === Разблокировка звука при первом касании (iOS fix) === */
+  useEffect(() => {
+    const handler = () => {
+      unlockAudio();
+      document.removeEventListener("touchstart", handler);
+    };
+    document.addEventListener("touchstart", handler, { once: true });
+  }, []);
+
+  /* === Обработка клика/тапа по утке === */
   const handleQuack = (e) => {
     playSound("quack");
 
@@ -72,6 +82,14 @@ export default function DuckPage() {
 
   return (
     <div className="relative w-screen h-[100dvh] bg-black select-none flex items-center justify-center">
+      {/* Кнопка звука */}
+      <button
+        onClick={() => unlockAudio()}
+        className="fixed top-4 left-6 text-2xl sm:text-3xl font-bold text-white hover:text-green-400 transition z-50"
+      >
+        🔊
+      </button>
+
       {/* Кнопка назад */}
       <Link
         href="/"

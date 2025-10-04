@@ -1,7 +1,7 @@
-// utils/audio.js
 let context;
 const sounds = {};
 const loops = {};
+let unlocked = false;
 
 function getContext() {
   if (!context) {
@@ -10,93 +10,99 @@ function getContext() {
   return context;
 }
 
-// === Разбудить контекст (iOS fix) ===
-export async function unlockAudio() {
+// === Разблокировать аудио (для iOS/Android) ===
+export function unlockAudio() {
   const ctx = getContext();
-  if (ctx.state === "suspended") {
-    await ctx.resume();
-  }
+  if (unlocked) return;
 
-  // iOS баг: иногда звук не идёт, пока не сыграть пустой buffer
   try {
+    if (ctx.state === "suspended") {
+      ctx.resume(); // синхронно!
+    }
+
+    // короткий "пустой" звук для прогрева
     const buffer = ctx.createBuffer(1, 1, 22050);
     const source = ctx.createBufferSource();
     source.buffer = buffer;
     source.connect(ctx.destination);
     source.start(0);
+
+    unlocked = true;
+    console.log("✅ Audio unlocked");
   } catch (e) {
-    console.warn("unlockAudio error", e);
+    console.warn("⚠️ unlockAudio error", e);
   }
+}
+
+// === Определение расширения (по платформе) ===
+function getAudioExt() {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod|Android/i.test(ua)) return "m4a";
+  return "ogg";
 }
 
 // === Загрузка звука ===
-export async function loadSound(key, url) {
+export async function loadSound(key, basePath) {
   const ctx = getContext();
-  const res = await fetch(url);
-  const arrayBuffer = await res.arrayBuffer();
-  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-  sounds[key] = audioBuffer;
-  return audioBuffer;
+  const ext = getAudioExt();
+  const url = `${basePath}.${ext}`;
+
+  try {
+    const res = await fetch(url);
+    const arrayBuffer = await res.arrayBuffer();
+    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+    sounds[key] = audioBuffer;
+    console.log(`🎧 Loaded: ${url}`);
+    return audioBuffer;
+  } catch (err) {
+    console.warn(`⚠️ Ошибка загрузки ${url}`, err);
+  }
 }
 
-// === Одноразовое воспроизведение ===
-export async function playSound(key, volume = 1.0) {
+// === Проигрывание коротких звуков ===
+export function playSound(key, volume = 1.0) {
   const ctx = getContext();
-  if (ctx.state === "suspended") {
-    await ctx.resume();
-  }
-  const buffer = sounds[key];
-  if (!buffer) return;
+  if (ctx.state === "suspended") ctx.resume();
+  if (!sounds[key]) return;
 
   const source = ctx.createBufferSource();
-  const gainNode = ctx.createGain();
-
-  source.buffer = buffer;
-  source.connect(gainNode);
-  gainNode.connect(ctx.destination);
-  gainNode.gain.value = volume;
-
+  const gain = ctx.createGain();
+  source.buffer = sounds[key];
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  gain.gain.value = volume;
   source.start(0);
   return source;
 }
 
 // === Зацикленное воспроизведение ===
-export async function playLoop(key, volume = 1.0) {
+export function playLoop(key, volume = 1.0) {
   const ctx = getContext();
-  if (ctx.state === "suspended") {
-    await ctx.resume();
-  }
-  const buffer = sounds[key];
-  if (!buffer) return null;
+  if (ctx.state === "suspended") ctx.resume();
+  if (!sounds[key]) return null;
 
   const source = ctx.createBufferSource();
-  const gainNode = ctx.createGain();
-
-  source.buffer = buffer;
+  const gain = ctx.createGain();
+  source.buffer = sounds[key];
   source.loop = true;
-  source.connect(gainNode);
-  gainNode.connect(ctx.destination);
-  gainNode.gain.value = volume;
-
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  gain.gain.value = volume;
   source.start(0);
-  loops[key] = { source, gainNode };
 
+  loops[key] = { source, gain };
   return {
     stop: () => {
-      try {
-        source.stop();
-      } catch {}
+      try { source.stop(); } catch {}
       delete loops[key];
     },
   };
 }
 
-// === Остановка всех звуков ===
+// === Остановить все звуки ===
 export function stopAllSounds() {
-  Object.keys(loops).forEach((key) => {
-    try {
-      loops[key].source.stop();
-    } catch {}
-    delete loops[key];
+  Object.keys(loops).forEach((k) => {
+    try { loops[k].source.stop(); } catch {}
+    delete loops[k];
   });
 }

@@ -6,7 +6,7 @@ import Image from "next/image";
 import confetti from "canvas-confetti";
 import FooterLink from "../../components/FooterLink";
 import Loader from "../../components/Loader";
-import { loadSound, playSound, stopAllSounds } from "../../utils/audio";
+import { loadSound, playSound, stopAllSounds, unlockAudio } from "../../utils/audio";
 import { QUESTIONS, getResult } from "./data";
 
 function shuffleArray(arr) {
@@ -26,10 +26,12 @@ export default function DoodleTest() {
 
   const current = QUESTIONS[step];
 
+  /* === Предзагрузка звуков и изображений === */
   useEffect(() => {
     const assets = [
-      loadSound("click", "common/sound/click.ogg"),
-      loadSound("winner", "common/sound/winner.ogg"),
+      // ✅ универсальные пути (подхватывают .m4a на iOS/Android)
+      loadSound("click", "/common/sound/click"),
+      loadSound("winner", "/common/sound/winner"),
       "/doodle/sprites/gay.png",
       "/doodle/sprites/office.png",
       "/doodle/sprites/gran.png",
@@ -59,10 +61,21 @@ export default function DoodleTest() {
     return () => stopAllSounds();
   }, []);
 
+  /* === Разблокировка звука при первом касании (iOS fix) === */
+  useEffect(() => {
+    const handler = () => {
+      unlockAudio();
+      document.removeEventListener("touchstart", handler);
+    };
+    document.addEventListener("touchstart", handler, { once: true });
+  }, []);
+
+  /* === Перемешивание ответов === */
   useEffect(() => {
     if (current) setShuffledAnswers(shuffleArray(current.answers));
   }, [step]);
 
+  /* === Обработка ответа === */
   const handleAnswer = (answer) => {
     playSound("click");
     const isCorrect =
@@ -72,6 +85,7 @@ export default function DoodleTest() {
     setStep((s) => s + 1);
   };
 
+  /* === Перезапуск === */
   const restart = () => {
     playSound("click");
     setStarted(false);
@@ -81,6 +95,7 @@ export default function DoodleTest() {
     setShowResult(false);
   };
 
+  /* === Завершение теста + конфетти === */
   useEffect(() => {
     if (step === QUESTIONS.length && started) {
       playSound("winner");
@@ -103,10 +118,20 @@ export default function DoodleTest() {
     }
   }, [step, started]);
 
+  /* === Loader === */
   if (!ready) return <Loader text="Загрузка..." progress={progress} />;
 
   return (
     <div className="min-h-[100dvh] bg-black text-white flex flex-col items-center justify-start pt-16 pb-32 px-4 sm:px-6">
+      {/* Кнопка звука */}
+      <button
+        onClick={() => unlockAudio()}
+        className="fixed top-4 left-6 text-2xl sm:text-3xl font-bold text-white hover:text-green-400 transition z-50"
+      >
+        🔊
+      </button>
+
+      {/* Кнопка выхода */}
       <Link
         href="/"
         onClick={() => stopAllSounds()}
@@ -115,6 +140,7 @@ export default function DoodleTest() {
         ✕
       </Link>
 
+      {/* Логотип */}
       {(!started || step < QUESTIONS.length) && (
         <div className="w-full flex justify-center mb-6">
           <Image
@@ -128,6 +154,7 @@ export default function DoodleTest() {
         </div>
       )}
 
+      {/* Экран начала */}
       {!started ? (
         <div className="max-w-2xl text-center">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4">
@@ -147,6 +174,7 @@ export default function DoodleTest() {
           </button>
         </div>
       ) : step < QUESTIONS.length ? (
+        /* Экран вопроса */
         <div className="max-w-xl text-center">
           <p className="mb-4 text-xs sm:text-sm md:text-base text-gray-400">
             Вопрос {step + 1} из {QUESTIONS.length}
@@ -167,12 +195,14 @@ export default function DoodleTest() {
           </div>
         </div>
       ) : showCounting ? (
+        /* Экран подсчёта */
         <div className="max-w-2xl text-center">
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-6 animate-pulse">
             Подсчитываем баллы...
           </h2>
         </div>
       ) : showResult ? (
+        /* Экран результата */
         (() => {
           const result = getResult(score);
           return (
@@ -192,9 +222,7 @@ export default function DoodleTest() {
                   className="max-w-[150px] sm:max-w-[200px] h-auto"
                 />
               </div>
-              <p className="mb-6 text-sm sm:text-base md:text-lg">
-                {result.text}
-              </p>
+              <p className="mb-6 text-sm sm:text-base md:text-lg">{result.text}</p>
               <a
                 href="https://t.me/doodle_music"
                 target="_blank"
@@ -214,6 +242,7 @@ export default function DoodleTest() {
         })()
       ) : null}
 
+      {/* Футер */}
       <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-50">
         <FooterLink />
       </div>

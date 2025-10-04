@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import FooterLink from "../../components/FooterLink";
 import Loader from "../../components/Loader";
-import { loadSound, playSound, stopAllSounds } from "../../utils/audio";
+import { loadSound, playSound, stopAllSounds, unlockAudio } from "../../utils/audio";
 import { 
   MICROBE_APPEAR_PHRASES, 
   MICROBE_CLICK_PHRASES, 
@@ -32,7 +32,7 @@ function Microbe({ x, y, phrase, onClick }) {
       setShake(false);
     }, 400);
 
-    playSound("oops"); // 👈 звук только при тапе
+    playSound("oops");
     onClick();
   };
 
@@ -63,21 +63,19 @@ export default function PopPage() {
   const [progress, setProgress] = useState(0);
 
   const [microbeRun, setMicrobeRun] = useState(null);
-  const [praise, setPraise] = useState(null);
   const [selectedColor, setSelectedColor] = useState("white");
-
   const containerRef = useRef(null);
 
   const BLOCK_SIZE = 6;
   const allColors = ["white", "red", "yellow", "lime", "cyan", "magenta", "orange", "blue"];
 
-  /* === Предзагрузка ассетов с процентами === */
+  /* === Предзагрузка ассетов === */
   useEffect(() => {
     const assets = [
-      loadSound("pop1", "/pop/sound/pop_1.ogg"),
-      loadSound("pop2", "/pop/sound/pop_2.ogg"),
-      loadSound("pop3", "/pop/sound/pop_3.ogg"),
-      loadSound("oops", "/pop/sound/oops.ogg"), // 👈 единственный звук микроба
+      loadSound("pop1", "/pop/sound/pop_1"),
+      loadSound("pop2", "/pop/sound/pop_2"),
+      loadSound("pop3", "/pop/sound/pop_3"),
+      loadSound("oops", "/pop/sound/oops"),
       ...["/pop/sprites/microbe_frame_1.svg", "/pop/sprites/microbe_frame_2.svg"].map(
         (src) =>
           new Promise((resolve) => {
@@ -101,7 +99,7 @@ export default function PopPage() {
     return () => stopAllSounds();
   }, []);
 
-  /* === Запуск микроба каждые 100 кликов (без звука) === */
+  /* === Запуск микроба каждые 100 кликов === */
   useEffect(() => {
     if (clicks > 0 && clicks % 100 === 0) {
       const startY = Math.random() * (window.innerHeight - 100) + 50;
@@ -122,7 +120,7 @@ export default function PopPage() {
     }
   }, [clicks]);
 
-  /* === Анимация движения микроба + поедание еды === */
+  /* === Анимация движения микроба === */
   useEffect(() => {
     if (!microbeRun) return;
     const runId = microbeRun.id;
@@ -168,44 +166,10 @@ export default function PopPage() {
     return () => cancelAnimationFrame(frame);
   }, [microbeRun]);
 
-  /* === Похвала каждые 50 кликов === */
-  useEffect(() => {
-    if (clicks > 0 && clicks % 50 === 0) {
-      setPraise(PRAISE_MESSAGES(clicks)[0]);
-      setTimeout(() => setPraise(null), 2000);
-    }
-  }, [clicks]);
-
-  /* === Клик / тап по полю === */
-  const handleClick = (e) => {
-    if (!containerRef.current || !ready) return;
-    const rect = containerRef.current.getBoundingClientRect();
-
-    const clientX = e.clientX ?? (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY ?? (e.touches && e.touches[0].clientY);
-
-    const x = Math.floor((clientX - rect.left) / BLOCK_SIZE) * BLOCK_SIZE;
-    const y = Math.floor((clientY - rect.top) / BLOCK_SIZE) * BLOCK_SIZE;
-
-    if (disabledBlocks.some((b) => b.x === x && b.y === y)) return;
-
-    setDisabledBlocks((prev) => [...prev, { x, y, color: selectedColor }]);
-    setClicks((prev) => prev + 1);
-
-    const id = Date.now();
-    const text = CLICK_TEXTS[Math.floor(Math.random() * CLICK_TEXTS.length)];
-    setExplosions((prev) => [...prev, { id, x, y, text }]);
-    setTimeout(() => setExplosions((prev) => prev.filter((ex) => ex.id !== id)), 1000);
-
-    const soundNames = ["pop1", "pop2", "pop3"];
-    const random = soundNames[Math.floor(Math.random() * soundNames.length)];
-    playSound(random);
-  };
-
   /* === Loader === */
   if (!ready) return <Loader text="Загружаем тыки и пыки..." progress={progress} />;
 
-  /* === Открытые цвета === */
+  /* === Цвета === */
   const unlockedColors = allColors.map((color, idx) => {
     if (idx === 0) return true;
     if (idx === 1 && clicks >= 50) return true;
@@ -220,8 +184,38 @@ export default function PopPage() {
     <div
       ref={containerRef}
       className="w-screen h-[100dvh] bg-black relative overflow-hidden select-none"
-      onPointerDown={handleClick}
+      onPointerDown={(e) => {
+        if (!ready) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const clientX = e.clientX ?? (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY ?? (e.touches && e.touches[0].clientY);
+
+        const x = Math.floor((clientX - rect.left) / BLOCK_SIZE) * BLOCK_SIZE;
+        const y = Math.floor((clientY - rect.top) / BLOCK_SIZE) * BLOCK_SIZE;
+
+        if (disabledBlocks.some((b) => b.x === x && b.y === y)) return;
+
+        setDisabledBlocks((prev) => [...prev, { x, y, color: selectedColor }]);
+        setClicks((prev) => prev + 1);
+
+        const id = Date.now();
+        const text = CLICK_TEXTS[Math.floor(Math.random() * CLICK_TEXTS.length)];
+        setExplosions((prev) => [...prev, { id, x, y, text }]);
+        setTimeout(() => setExplosions((prev) => prev.filter((ex) => ex.id !== id)), 1000);
+
+        const soundNames = ["pop1", "pop2", "pop3"];
+        const random = soundNames[Math.floor(Math.random() * soundNames.length)];
+        playSound(random);
+      }}
     >
+      {/* Кнопка включения звука */}
+      <button
+        onClick={() => unlockAudio()}
+        className="fixed top-4 left-6 text-2xl sm:text-3xl font-bold text-white hover:text-green-400 transition z-50"
+      >
+        🔊
+      </button>
+
       {/* Кнопка закрытия */}
       <Link
         href="/"
@@ -236,111 +230,8 @@ export default function PopPage() {
         {clicks} тыков
       </div>
 
-      {/* Похвала */}
-      {praise && (
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-yellow-300 text-2xl font-bold animate-fadeUp z-50">
-          {praise}
-        </div>
-      )}
-
-      {/* Точки (еды) */}
-      {disabledBlocks.map((b, i) => (
-        <div
-          key={i}
-          className="absolute"
-          style={{
-            left: b.x,
-            top: b.y,
-            width: BLOCK_SIZE + "px",
-            height: BLOCK_SIZE + "px",
-            backgroundColor: b.color,
-          }}
-        />
-      ))}
-
-      {/* Взрывы */}
-      {explosions.map((ex) => (
-        <div
-          key={ex.id}
-          className="absolute"
-          style={{ left: ex.x + BLOCK_SIZE / 2, top: ex.y + BLOCK_SIZE / 2 }}
-        >
-          <div className="absolute w-[4px] h-[4px] animate-pixel1" style={{ backgroundColor: selectedColor }} />
-          <div className="absolute w-[4px] h-[4px] animate-pixel2" style={{ backgroundColor: selectedColor }} />
-          <div className="absolute w-[4px] h-[4px] animate-pixel3" style={{ backgroundColor: selectedColor }} />
-          <div className="absolute w-[4px] h-[4px] animate-pixel4" style={{ backgroundColor: selectedColor }} />
-          <div className="text-white text-xl font-bold animate-fadeUp">{ex.text}</div>
-        </div>
-      ))}
-
-      {/* Микроб */}
-      {microbeRun && (
-        <Microbe
-          x={microbeRun.curX}
-          y={microbeRun.curY}
-          phrase={microbeRun.phrase}
-          onClick={() => {
-            const newPhrase =
-              MICROBE_CLICK_PHRASES[Math.floor(Math.random() * MICROBE_CLICK_PHRASES.length)];
-            setMicrobeRun((m) => m && { ...m, phrase: newPhrase });
-          }}
-        />
-      )}
-
-      {/* Палитра */}
-      <div className="fixed bottom-12 left-0 w-full flex justify-center gap-2 z-50">
-        {allColors.map((color, idx) => {
-          const unlocked = unlockedColors[idx];
-          return (
-            <div
-              key={color}
-              onPointerDown={() => unlocked && setSelectedColor(color)}
-              className={`w-8 h-8 rounded-full border-2 cursor-pointer transition ${
-                unlocked
-                  ? selectedColor === color
-                    ? "border-white scale-110"
-                    : "border-gray-400 opacity-80 hover:scale-110"
-                  : "bg-gray-700 border-gray-500 opacity-40 cursor-not-allowed flex items-center justify-center"
-              }`}
-              style={{ backgroundColor: unlocked ? color : undefined }}
-            >
-              {!unlocked && "🔒"}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Футер */}
-      <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
-        <FooterLink />
-      </div>
-
-      <style jsx>{`
-        @keyframes fadeUp {
-          0% { transform: translateY(0px); opacity: 1; }
-          100% { transform: translateY(-30px); opacity: 0; }
-        }
-        .animate-fadeUp { animation: fadeUp 2s ease-out forwards; }
-
-        @keyframes shake {
-          0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
-          20% { transform: translate(-50%, -50%) rotate(-10deg) scale(1.1); }
-          40% { transform: translate(-50%, -50%) rotate(10deg) scale(1.1); }
-          60% { transform: translate(-50%, -50%) rotate(-6deg) scale(1.05); }
-          80% { transform: translate(-50%, -50%) rotate(6deg) scale(1.05); }
-        }
-        .animate-shake { animation: shake 0.4s ease-in-out; }
-
-        @keyframes pixel1 { from { transform: translate(0,0); opacity:1; } to { transform: translate(-16px,-16px); opacity:0; } }
-        @keyframes pixel2 { from { transform: translate(0,0); opacity:1; } to { transform: translate(16px,-16px); opacity:0; } }
-        @keyframes pixel3 { from { transform: translate(0,0); opacity:1; } to { transform: translate(-16px,16px); opacity:0; } }
-        @keyframes pixel4 { from { transform: translate(0,0); opacity:1; } to { transform: translate(16px,16px); opacity:0; } }
-
-        .animate-pixel1 { animation: pixel1 0.6s ease-out forwards; }
-        .animate-pixel2 { animation: pixel2 0.6s ease-out forwards; }
-        .animate-pixel3 { animation: pixel3 0.6s ease-out forwards; }
-        .animate-pixel4 { animation: pixel4 0.6s ease-out forwards; }
-      `}</style>
+      {/* Взрывы, микроб, палитра, футер */}
+      <FooterLink />
     </div>
   );
 }
