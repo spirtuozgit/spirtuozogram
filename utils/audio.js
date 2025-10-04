@@ -5,7 +5,7 @@ const loops = {};
 let unlocked = false;
 
 /* ============================================================
-   🧩 Получаем или создаём AudioContext
+   🎧 Создание или получение AudioContext
    ============================================================ */
 function getContext() {
   if (!context) {
@@ -15,47 +15,47 @@ function getContext() {
 }
 
 /* ============================================================
-   🔓 Разблокировка звука (фикс iOS встроенных динамиков)
+   🔓 Разблокировка звука (рабочая версия для iOS встроенных динамиков)
    ============================================================ */
-export function unlockAudio() {
+export async function unlockAudio() {
   const ctx = getContext();
   if (unlocked) return;
 
   try {
-    // 1️⃣ Активируем контекст, если приостановлен
+    // 1️⃣ Резюмируем, если контекст приостановлен
     if (ctx.state === "suspended" || ctx.state === "interrupted") {
-      ctx.resume();
+      await ctx.resume();
     }
 
-    // 2️⃣ Создаём "пустой" звук, чтобы прогреть AudioContext
-    const buffer = ctx.createBuffer(1, 1, 22050);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
+    // 2️⃣ Создаём и проигрываем реальный HTMLAudioElement (включает speaker route)
+    const el = document.createElement("audio");
+    el.src =
+      "data:audio/mp4;base64,AAAAIGZ0eXBpc29tAAAAAGlzb21pc28ybXA0MQAAAA9tZGF0AAAADm1wNDEAAAAAAAAAAA==";
+    el.volume = 0.001;
+    el.play().catch(() => {});
+    await new Promise((r) => setTimeout(r, 100));
 
-    // 3️⃣ Основной хак: создаём HTMLAudioElement с "тишиной" (AAC)
-    const dummy = document.createElement("audio");
-    dummy.src =
-      "data:audio/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDFtcDQyaXNvbQAAABRkaXNvAAAAAAAAAAEAAQABAAAAAAA=";
-    dummy.volume = 0.001;
-    dummy.play()
-      .then(() => {
-        dummy.pause();
-        dummy.remove();
-        console.info("🔊 iOS speaker route activated");
-      })
-      .catch(() => {});
+    // 3️⃣ Привязываем Web Audio к реальному медиа-потоку (для speaker)
+    const dest = ctx.createMediaStreamDestination();
+    const out = new Audio();
+    out.srcObject = dest.stream;
+    out.play().catch(() => {});
+
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(dest);
+    src.start(0);
 
     unlocked = true;
-    console.log("✅ Audio unlocked (speaker ready on iPhone)");
+    console.log("✅ AudioContext fully unlocked (iPhone speaker active)");
   } catch (e) {
     console.warn("⚠️ unlockAudio error", e);
   }
 }
 
 /* ============================================================
-   🎧 Определяем расширение (iOS/Android → m4a, остальные → ogg)
+   🧩 Определение формата (AAC → iOS/Android, OGG → Desktop)
    ============================================================ */
 function getAudioExt() {
   const ua = navigator.userAgent;
@@ -64,13 +64,12 @@ function getAudioExt() {
 }
 
 /* ============================================================
-   📦 Загрузка звука в буфер
+   📦 Загрузка звуков
    ============================================================ */
 export async function loadSound(key, basePath) {
   const ctx = getContext();
   const ext = getAudioExt();
   const url = `${basePath}.${ext}`;
-
   try {
     const res = await fetch(url);
     const arrayBuffer = await res.arrayBuffer();
@@ -84,7 +83,7 @@ export async function loadSound(key, basePath) {
 }
 
 /* ============================================================
-   ▶️ Воспроизведение коротких звуков
+   ▶️ Проигрывание коротких звуков
    ============================================================ */
 export function playSound(key, volume = 1.0) {
   const ctx = getContext();
@@ -102,7 +101,7 @@ export function playSound(key, volume = 1.0) {
 }
 
 /* ============================================================
-   🔁 Воспроизведение зацикленного звука
+   🔁 Циклическое воспроизведение
    ============================================================ */
 export function playLoop(key, volume = 1.0) {
   const ctx = getContext();
@@ -128,19 +127,17 @@ export function playLoop(key, volume = 1.0) {
 }
 
 /* ============================================================
-   ⏹ Остановка всех звуков
+   ⏹ Остановка всех активных звуков
    ============================================================ */
 export function stopAllSounds() {
   Object.keys(loops).forEach((k) => {
-    try {
-      loops[k].source.stop();
-    } catch {}
+    try { loops[k].source.stop(); } catch {}
     delete loops[k];
   });
 }
 
 /* ============================================================
-   ♻️ Перезапуск контекста при смене вывода / возврате вкладки
+   ♻️ Автоматический перезапуск контекста при возврате из сна
    ============================================================ */
 function restartContext() {
   try {
@@ -148,7 +145,7 @@ function restartContext() {
       context.close().then(() => {
         context = new (window.AudioContext || window.webkitAudioContext)();
         unlocked = false;
-        console.info("🔁 AudioContext restarted (output changed)");
+        console.info("🔁 AudioContext restarted after sleep");
         unlockAudio();
       });
     }
