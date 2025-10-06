@@ -45,7 +45,7 @@ export default function Menu() {
     { href: "/microbe", label: "Микроб-Матершинник", icon: "/common/icons/microbe_icon.png" },
     { href: "/doodletest", label: "Дудло-Тест", icon: "/common/icons/doodle_icon.png" },
     { href: "/pop", label: "Тык-Пык", icon: "/common/icons/pop_icon.png" },
-    { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
+    { href: "/player", label: "8-bit Doodle", icon: "/common/icons/player_icon.png"},
     { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
     { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
   ];

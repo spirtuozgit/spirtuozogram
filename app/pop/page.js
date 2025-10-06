@@ -116,8 +116,8 @@ export default function PopPage() {
       // улёт после клика
       if (microbeRun.leaving) {
         const t = Math.min(elapsed / 100, 1);
-        const x = microbeRun.startX + (microbeRun.endX - microbeRun.startX) * t;
-        const y = microbeRun.startY + (microbeRun.endY - microbeRun.startY) * t;
+        const x = microbeRun.startX + (microbeRun.endX - microbeRun.startX) * (t/2);
+        const y = microbeRun.startY + (microbeRun.endY - microbeRun.startY) * (t/2);
         setMicrobeRun((m) => (m && m.id === runId ? { ...m, curX: x, curY: y } : m));
         if (t < 1) frame = requestAnimationFrame(animate);
         else setMicrobeRun(null);
