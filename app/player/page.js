@@ -9,32 +9,61 @@ import { saveAs } from "file-saver";
 
 export default function SpirtuozPlayer() {
   const router = useRouter();
-  const [current, setCurrent] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [bufferProgress, setBufferProgress] = useState(0);
-  const [playProgress, setPlayProgress] = useState(0);
-  const [time, setTime] = useState({ cur: 0, dur: 0 });
-  const [progress, setProgress] = useState(0);
-  const [showDownloadChoice, setShowDownloadChoice] = useState(false);
   const audioRef = useRef(null);
   const rafRef = useRef(null);
   const progressRef = useRef(null);
 
-  // --- Лоадер ---
+  const [isLoading, setIsLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [current, setCurrent] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [bufferProgress, setBufferProgress] = useState(0);
+  const [playProgress, setPlayProgress] = useState(0);
+  const [time, setTime] = useState({ cur: 0, dur: 0 });
+  const [showDownloadChoice, setShowDownloadChoice] = useState(false);
+
+  // ---------- ПРЕДЗАГРУЗКА ----------
   useEffect(() => {
-    let p = 0;
-    const timer = setInterval(() => {
-      p += 10;
-      setProgress(p);
-      if (p >= 100) {
-        clearInterval(timer);
-        setTimeout(() => setIsLoading(false), 300);
+    const assets = [
+      "/player/play.png",
+      "/player/pause.png",
+      "/player/back.png",
+      "/player/forward.png",
+      "/player/zip.png",
+      "/player/music.png",
+      "/player/close.png",
+      "/player/save.png",
+      "/player/cover.jpg",
+      "/common/UI/money.png",
+      ...playlist.map((t) => t.src)
+    ];
+
+    let loaded = 0;
+    const total = assets.length;
+
+    const updateProgress = () => {
+      loaded++;
+      setProgress(Math.round((loaded / total) * 100));
+      if (loaded >= total) setTimeout(() => setIsLoading(false), 300);
+    };
+
+    assets.forEach((url) => {
+      if (url.endsWith(".mp3") || url.endsWith(".ogg")) {
+        const a = document.createElement("audio");
+        a.src = url;
+        a.preload = "auto";
+        a.oncanplaythrough = updateProgress;
+        a.onerror = updateProgress;
+      } else {
+        const img = new Image();
+        img.onload = updateProgress;
+        img.onerror = updateProgress;
+        img.src = url;
       }
-    }, 100);
-    return () => clearInterval(timer);
+    });
   }, []);
 
+  // ---------- ФОРМАТ ВРЕМЕНИ ----------
   const formatTime = (sec) => {
     if (!sec || isNaN(sec)) return "0:00";
     const m = Math.floor(sec / 60);
@@ -42,14 +71,15 @@ export default function SpirtuozPlayer() {
     return `${m}:${s}`;
   };
 
-  // --- визуализация ---
+  // ---------- ОБНОВЛЕНИЕ ВИЗУАЛА ----------
   const updateVisuals = () => {
     const a = audioRef.current;
     if (!a || !a.duration) return;
     setPlayProgress((a.currentTime / a.duration) * 100);
     try {
       if (a.buffered.length > 0) {
-        const loaded = (a.buffered.end(a.buffered.length - 1) / a.duration) * 100;
+        const loaded =
+          (a.buffered.end(a.buffered.length - 1) / a.duration) * 100;
         setBufferProgress(Math.min(loaded, 100));
       }
     } catch {}
@@ -65,10 +95,11 @@ export default function SpirtuozPlayer() {
       cancelAnimationFrame(rafRef.current);
       updateVisuals();
     } catch (err) {
-      console.warn("play() interrupted:", err);
+      console.warn("play interrupted:", err);
     }
   };
 
+  // ---------- PLAY / PAUSE ----------
   const playPause = async () => {
     const a = audioRef.current;
     if (!a) return;
@@ -78,26 +109,16 @@ export default function SpirtuozPlayer() {
       setIsPlaying(false);
       return;
     }
-    if (a.readyState < 1) {
-      a.load();
-      await new Promise((resolve) => {
-        const meta = () => {
-          setTime({ cur: 0, dur: a.duration || 0 });
-          a.removeEventListener("loadedmetadata", meta);
-          resolve();
-        };
-        a.addEventListener("loadedmetadata", meta);
-        setTimeout(resolve, 800);
-      });
-    }
     await safePlay();
     setIsPlaying(true);
   };
 
+  // ---------- СЛЕДУЮЩИЙ / ПРЕДЫДУЩИЙ ----------
   const next = () => setCurrent((c) => (c + 1) % playlist.length);
-  const prev = () => setCurrent((c) => (c - 1 + playlist.length) % playlist.length);
+  const prev = () =>
+    setCurrent((c) => (c - 1 + playlist.length) % playlist.length);
 
-  // --- смена трека ---
+  // ---------- СМЕНА ТРЕКА ----------
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -106,128 +127,115 @@ export default function SpirtuozPlayer() {
     setBufferProgress(0);
     setPlayProgress(0);
     setTime({ cur: 0, dur: 0 });
-    a.load();
-    const onReady = () => {
+
+    const onCanPlay = () => {
       setTime({ cur: 0, dur: a.duration || 0 });
       if (isPlaying) safePlay();
-      a.removeEventListener("canplay", onReady);
+      a.removeEventListener("canplay", onCanPlay);
     };
-    a.addEventListener("canplay", onReady);
+    const onEnded = () => next(); // автовоспроизведение следующего
+
+    a.addEventListener("canplay", onCanPlay);
+    a.addEventListener("ended", onEnded);
+    a.load();
+
+    return () => {
+      a.removeEventListener("canplay", onCanPlay);
+      a.removeEventListener("ended", onEnded);
+    };
   }, [current]);
 
+  // ---------- ПЕРЕМОТКА ----------
   const handleSeek = (e) => {
     const rect = progressRef.current.getBoundingClientRect();
     const x = e.clientX || (e.touches && e.touches[0].clientX);
-    const ratio = (x - rect.left) / rect.width;
+    const ratio = Math.min(Math.max((x - rect.left) / rect.width, 0), 1);
     const newTime = ratio * (time.dur || 0);
     audioRef.current.currentTime = newTime;
     setTime({ ...time, cur: newTime });
   };
 
-    const playTrack = (i) => {
-        const a = audioRef.current;
-        if (!a) return;
+  // ---------- НАЖАТИЕ НА ТРЕК ----------
+  const playTrack = (i) => {
+    const a = audioRef.current;
+    if (!a) return;
+    if (i === current) {
+      if (!isPlaying) {
+        safePlay();
+        setIsPlaying(true);
+      } else {
+        a.pause();
+        setIsPlaying(false);
+      }
+    } else {
+      setCurrent(i);
+      setIsPlaying(true);
+    }
+  };
 
-        if (i === current) {
-            // Если нажали на уже выбранный трек
-            if (!isPlaying) {
-                safePlay();
-                setIsPlaying(true);
-            } else {
-                a.pause();
-                setIsPlaying(false);
-            }
-        } else {
-            // Если выбрали новый трек
-            setCurrent(i);
-            setIsPlaying(true);
-        }
-    };
-
-
-  // --- ZIP ---
+  // ---------- ZIP ----------
   const downloadZipAlbum = async () => {
     setShowDownloadChoice(false);
     const zip = new JSZip();
-    const albumFolder = zip.folder("8BitDoodle by Spirtuoz");
+    const folder = zip.folder("8BitDoodle by Spirtuoz");
     try {
-      const coverResp = await fetch("/player/cover.jpg");
-      const coverBlob = await coverResp.blob();
-      albumFolder.file("cover.jpg", coverBlob);
+      const cover = await fetch("/player/cover.jpg").then((r) => r.blob());
+      folder.file("cover.jpg", cover);
     } catch {}
     for (const track of playlist) {
       try {
-        const response = await fetch(track.src);
-        const blob = await response.blob();
-        albumFolder.file(track.title + ".mp3", blob);
+        const blob = await fetch(track.src).then((r) => r.blob());
+        folder.file(`${track.title}.mp3`, blob);
       } catch {}
     }
-    const content = await zip.generateAsync({ type: "blob" });
-    saveAs(content, "8BitDoodle by Spirtuoz.zip");
+    const blob = await zip.generateAsync({ type: "blob" });
+    saveAs(blob, "8BitDoodle by Spirtuoz.zip");
   };
 
-  // --- Открыть список треков ---
+  // ---------- СПИСОК ТРЕКОВ ----------
   const openTrackList = () => {
-    setShowDownloadChoice(false);
     const html = `
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        body{background:#000;color:#6eff8c;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-          margin:0;padding:30px 0 60px;text-align:center;}
-        h2{font-size:clamp(22px,4vw,28px);margin-bottom:25px;text-shadow:0 0 10px #6eff8c;
-          display:flex;justify-content:center;align-items:center;gap:10px;}
-        h2 img.icon{width:26px;height:26px;}
-        ul{list-style:none;padding:0;margin:0 auto;width:92%;max-width:420px;text-align:left;}
-        li{display:flex;align-items:center;gap:12px;background:rgba(20,20,20,.8);border:1px solid #222;
-          border-radius:10px;margin-bottom:12px;padding:12px 14px;box-shadow:0 0 10px #6eff8c20;}
-        a{color:#6eff8c;text-decoration:none;flex:1;font-size:clamp(15px,3.5vw,18px);}
-        a:hover{text-decoration:underline;}
-        img.save-icon{width:clamp(20px,4vw,24px);height:clamp(20px,4vw,24px);}
-        img.cover{width:clamp(180px,60vw,240px);height:clamp(180px,60vw,240px);
-          object-fit:cover;border-radius:14px;box-shadow:0 0 20px #6eff8c60;margin-bottom:25px;}
-        .close-btn{position:fixed;top:14px;right:18px;background:transparent;border:none;cursor:pointer;}
-        .close-btn img{width:clamp(26px,5vw,32px);height:clamp(26px,5vw,32px);
-          filter:drop-shadow(0 0 8px #6eff8c);transition:.2s;}
-        .close-btn:hover img{transform:scale(1.15);filter:drop-shadow(0 0 12px #a0ffc2);}
-        .donate{display:inline-flex;align-items:center;gap:6px;margin-top:30px;color:#6eff8c;
-          text-decoration:none;font-size:14px;}
-        .donate img{width:20px;height:20px;filter:drop-shadow(0 0 6px #6eff8c);}
-        footer{position:fixed;bottom:10px;width:100%;font-size:12px;color:#6eff8c80;}
-      </style>
-    `;
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+    body{background:#000;color:#6eff8c;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    margin:0;padding:30px 0 60px;text-align:center;}
+    h2{font-size:clamp(22px,4vw,28px);margin-bottom:25px;text-shadow:0 0 10px #6eff8c;}
+    ul{list-style:none;padding:0;margin:0 auto;width:92%;max-width:420px;text-align:left;}
+    li{display:flex;align-items:center;gap:12px;background:rgba(20,20,20,.8);border:1px solid #222;
+    border-radius:10px;margin-bottom:12px;padding:12px 14px;box-shadow:0 0 10px #6eff8c20;}
+    a{color:#6eff8c;text-decoration:none;flex:1;font-size:clamp(15px,3.5vw,18px);}
+    a:hover{text-decoration:underline;}
+    img.save-icon{width:clamp(20px,4vw,24px);}
+    img.cover{width:clamp(180px,60vw,240px);height:clamp(180px,60vw,240px);
+    object-fit:cover;border-radius:14px;box-shadow:0 0 20px #6eff8c60;margin-bottom:25px;}
+    footer{position:fixed;bottom:10px;width:100%;font-size:12px;color:#6eff8c80;}
+    </style>`;
     const win = window.open("", "_blank");
     if (!win) return alert("Разрешите всплывающие окна!");
     win.document.write("<html><head>" + html + "</head><body>");
     win.document.write(`
-      <button class="close-btn" onclick="window.close()">
-        <img src="/player/close.png" alt="close" />
-      </button>
-      <h2><img src="/player/music.png" class="icon" />8BitDoodle by Spirtuoz</h2>
+      <h2>8BitDoodle by Spirtuoz</h2>
       <img src="/player/cover.jpg" class="cover" />
-      <ul>
-    `);
+      <ul>`);
     playlist.forEach((t) =>
       win.document.write(
-        `<li><img src="/player/save.png" class="save-icon" />
-        <a href="${t.src}" download="${t.title}.mp3" target="_blank">${t.title}</a></li>`
+        `<li><img src="/player/save.png" class="save-icon" /><a href="${t.src}" download>${t.title}</a></li>`
       )
     );
     win.document.write(`
       </ul>
-      <a href="https://tips.yandex.ru/guest/payment/3578262" target="_blank" class="donate">
-        <img src="/common/UI/money.png" /> Задонатить автору
-      </a>
-      <footer>Spirtuozgram © 2025</footer>
-    </body></html>`);
-    win.document.title = "8BitDoodle — Отдельные треки";
+      <a href="https://tips.yandex.ru/guest/payment/3578262" target="_blank" style="color:#6eff8c;">💰 Поддержать автора</a>
+      <footer>Spirtuozgram © 2025</footer></body></html>`);
+    win.document.title = "8BitDoodle — Треки";
   };
 
+  // ---------- ЛОАДЕР ----------
   if (isLoading)
     return <Loader text="Spirtuoz Fest Player" progress={progress} />;
 
+  // ---------- UI ----------
   return (
     <div className="relative min-h-screen bg-black text-white flex flex-col items-center pb-40 px-4 overflow-hidden">
-      {/* кнопка выход */}
       <button
         onClick={() => router.push("/")}
         className="absolute top-4 right-4 text-[#6eff8c] text-3xl hover:scale-110 transition"
@@ -235,7 +243,6 @@ export default function SpirtuozPlayer() {
         ×
       </button>
 
-      {/* Заголовок */}
       <div className="mt-10 text-center">
         <h1 className="text-4xl md:text-5xl font-extrabold text-[#6eff8c] tracking-wider animate-neon">
           8-bit DOODLE
@@ -245,18 +252,14 @@ export default function SpirtuozPlayer() {
 
       <audio ref={audioRef} src={playlist[current].src} preload="auto" />
 
-      {/* кнопка плей */}
+      {/* ПРОГРЕСС-КРУГ */}
       <div className="relative flex items-center justify-center mt-8 mb-4">
         <svg className="absolute w-32 h-32 -rotate-90" viewBox="0 0 100 100">
           <circle cx="50" cy="50" r="46" stroke="#2e2e2e" strokeWidth="5" fill="none" />
-          <circle
-            cx="50" cy="50" r="46" stroke="#6eff8c40" strokeWidth="5"
-            fill="none"
+          <circle cx="50" cy="50" r="46" stroke="#6eff8c40" strokeWidth="5" fill="none"
             strokeDasharray={`${(bufferProgress / 100) * 2 * Math.PI * 46},999`}
             strokeLinecap="round" />
-          <circle
-            cx="50" cy="50" r="41" stroke="#6eff8c" strokeWidth="4"
-            fill="none"
+          <circle cx="50" cy="50" r="41" stroke="#6eff8c" strokeWidth="4" fill="none"
             strokeDasharray={`${(playProgress / 100) * 2 * Math.PI * 41},999`}
             strokeLinecap="round" />
         </svg>
@@ -272,17 +275,7 @@ export default function SpirtuozPlayer() {
         </button>
       </div>
 
-      {/* кнопки вперед назад */}
-      <div className="flex gap-16 text-2xl mt-3">
-        <button onClick={prev} className="hover:scale-110 transition">
-          <img src="/player/back.png" alt="prev" className="w-8 h-8" />
-        </button>
-        <button onClick={next} className="hover:scale-110 transition">
-          <img src="/player/forward.png" alt="next" className="w-8 h-8" />
-        </button>
-      </div>
-
-      {/* время */}
+      {/* СКРОБАР */}
       <div className="w-full max-w-md px-4 mt-3">
         <div className="flex justify-between text-sm text-gray-400 mb-1">
           <span>{formatTime(time.cur)}</span>
@@ -291,22 +284,18 @@ export default function SpirtuozPlayer() {
         <div
           ref={progressRef}
           className="w-full h-2 bg-white/10 rounded-full overflow-hidden cursor-pointer"
-          onClick={handleSeek}>
-          <div
-            className="h-full bg-[#6eff8c]"
-            style={{ width: `${playProgress}%` }}
-          />
+          onClick={handleSeek}
+        >
+          <div className="h-full bg-[#6eff8c]" style={{ width: `${playProgress}%` }} />
         </div>
       </div>
 
-      {/* название */}
-      <div className="w-full max-w-md text-center mt-6">
-        <p className="text-[#6eff8c] text-lg font-semibold truncate">
-          {playlist[current].title}
-        </p>
-      </div>
+      {/* НАЗВАНИЕ */}
+      <p className="text-[#6eff8c] text-lg font-semibold truncate mt-6">
+        {playlist[current].title}
+      </p>
 
-      {/* список */}
+      {/* СПИСОК */}
       <div className="w-full max-w-md mt-4 border-t border-white/10 pt-3 bg-[#101010]/70 backdrop-blur-sm overflow-y-auto h-[28vh] mb-4 scrollbar-thin rounded-xl">
         {playlist.map((t, i) => (
           <div
@@ -314,25 +303,28 @@ export default function SpirtuozPlayer() {
             onClick={() => playTrack(i)}
             className={`p-2 px-3 rounded-lg mb-2 cursor-pointer ${
               i === current ? "bg-[#6eff8c]/40 text-white" : "hover:bg-[#6eff8c]/15 text-gray-300"
-            }`}>
+            }`}
+          >
             {i + 1}. {t.title}
           </div>
         ))}
       </div>
 
-      {/* кнопки действий */}
+      {/* КНОПКИ */}
       <div className="flex flex-wrap gap-6 mb-12 justify-center">
         <button
           onClick={() => setShowDownloadChoice(true)}
-          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm">
+          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm"
+        >
           <img src="/player/zip.png" className="w-5 h-5" /> Скачать альбом
         </button>
 
         <a
           href="https://tips.yandex.ru/guest/payment/3578262"
           target="_blank"
-          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm">
-          <img src="/common/UI/money.png" className="w-5 h-5" /> Задонатить автору
+          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm"
+        >
+          <img src="/common/UI/money.png" className="w-5 h-5" /> Поддержать автора
         </a>
       </div>
 
@@ -370,25 +362,12 @@ export default function SpirtuozPlayer() {
         .animate-neon {
           text-shadow: 0 0 6px #6eff8c, 0 0 15px #6eff8c;
         }
-        .scrollbar-thin {
-          scrollbar-width: thin;
-          scrollbar-color: #6eff8c40 transparent;
-        }
         .scrollbar-thin::-webkit-scrollbar {
           width: 6px;
-        }
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent;
         }
         .scrollbar-thin::-webkit-scrollbar-thumb {
           background-color: #6eff8c60;
           border-radius: 8px;
-          box-shadow: 0 0 8px #6eff8c80;
-          transition: 0.2s;
-        }
-        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-          background-color: #6eff8ccc;
-          box-shadow: 0 0 10px #6eff8c;
         }
       `}</style>
     </div>
