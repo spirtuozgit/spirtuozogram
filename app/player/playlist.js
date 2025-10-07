@@ -25,7 +25,8 @@ const playlist = [
   { title: "8BitDoodle – Smoke", src: `${base}/8BitDoodle%20%E2%80%93%20Smoke.mp3` },
   { title: "8BitDoodle – Space", src: `${base}/8BitDoodle%20%E2%80%93%20Space.mp3` },
   { title: "8BitDoodle – Teleport", src: `${base}/8BitDoodle%20%E2%80%93%20Teleport.mp3` },
-  { title: "8BitDoodle – Woman", src: `${base}/8BitDoodle%20%E2%80%93%20Woman.mp3` },
+  { title: "8BitDoodle – Woman", src: `${base}/8BitDoodle%20%E2%80%93%20Woman.mp3` }, 
+  { title: "8BitDoodle – LionCubs", src: `${base}/8BitDoodle%20-%20LionCubs.mp3` },
 ];
 
 export default playlist;
