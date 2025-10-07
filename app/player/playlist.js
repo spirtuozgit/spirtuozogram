@@ -28,5 +28,3 @@ const playlist = [
   { title: "8BitDoodle – Woman", src: `${base}/8BitDoodle%20%E2%80%93%20Woman.mp3` },
 ];
 
-export { coverUrl };
-export default playlist;

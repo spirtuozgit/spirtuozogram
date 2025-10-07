@@ -9,7 +9,7 @@ export default function Menu() {
   const [ageConfirmed, setAgeConfirmed] = useState(null);
 
   useEffect(() => {
-    // ✅ Загружаем звук клика (автоматически выберет .m4a на iOS/Android, .ogg на остальных)
+    // ✅ Загружаем звук клика
     loadSound("click", "/common/sound/click").catch(() =>
       console.warn("Ошибка загрузки click")
     );
@@ -45,7 +45,7 @@ export default function Menu() {
     { href: "/microbe", label: "Микроб-Матершинник", icon: "/common/icons/microbe_icon.png" },
     { href: "/doodletest", label: "Дудло-Тест", icon: "/common/icons/doodle_icon.png" },
     { href: "/pop", label: "Тык-Пык", icon: "/common/icons/pop_icon.png" },
-    { href: "/player", label: "8-bit Doodle", icon: "/common/icons/player_icon.png"},
+    { href: "/player", label: "8-bit Doodle", icon: "/common/icons/player_icon.png" },
     { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
     { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
   ];
@@ -98,7 +98,7 @@ export default function Menu() {
       </div>
 
       {/* Сетка плиток */}
-      <div className="flex-1 overflow-y-auto px-2">
+      <div className="flex-1 overflow-y-auto px-2 pb-6">
         <div
           className="grid mx-auto"
           style={{
@@ -143,8 +143,26 @@ export default function Menu() {
         </div>
       </div>
 
+      {/* Кнопка поддержать автора */}
+      <div className="flex justify-center pb-2">
+        <button
+          onClick={() => {
+            playSound("click");
+                      window.open("https://tips.yandex.ru/guest/payment/3578262", "_blank");
+          }}
+          className="flex items-center gap-2 px-3 py-1 bg-green-600 text-white text-[10px] sm:text-xs font-купгдфк hover:bg-green-500 transition rounded-none"
+        >
+          <img
+            src="/common/UI/money.png"
+            alt="money icon"
+            className="w-4 h-4 sm:w-5 sm:h-5"
+          />
+          ПОДДЕРЖАТЬ
+        </button>
+      </div>
+
       {/* Футер */}
-      <div className="flex-shrink-0 text-center text-gray-500 text-[9px] sm:text-[10px] md:text-xs pb-[env(safe-area-inset-bottom)] py-2">
+      <div className="flex-shrink-0 text-center text-gray-500 text-[10px] sm:text-[10px] md:text-xs pb-[env(safe-area-inset-bottom)] mb-10 py-0">
         <a
           href="https://t.me/dimaspirtuoz"
           target="_blank"
