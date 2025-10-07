@@ -9,22 +9,23 @@ import { saveAs } from "file-saver";
 
 export default function SpirtuozPlayer() {
   const router = useRouter();
+  const [current, setCurrent] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [bufferProgress, setBufferProgress] = useState(0);
+  const [playProgress, setPlayProgress] = useState(0);
+  const [time, setTime] = useState({ cur: 0, dur: 0 });
+  const [progress, setProgress] = useState(0);
+  const [showDownloadChoice, setShowDownloadChoice] = useState(false);
+  const [zipProgress, setZipProgress] = useState(0);
+  const [isZipping, setIsZipping] = useState(false);
   const audioRef = useRef(null);
   const rafRef = useRef(null);
   const progressRef = useRef(null);
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [progress, setProgress] = useState(0);
-  const [current, setCurrent] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [bufferProgress, setBufferProgress] = useState(0);
-  const [playProgress, setPlayProgress] = useState(0);
-  const [time, setTime] = useState({ cur: 0, dur: 0 });
-  const [showDownloadChoice, setShowDownloadChoice] = useState(false);
-
-  // ---------- ЛОАДЕР ----------
+  // --- Лоадер ---
   useEffect(() => {
-    const assets = [
+    const imageUrls = [
       "/player/play.png",
       "/player/pause.png",
       "/player/back.png",
@@ -37,17 +38,14 @@ export default function SpirtuozPlayer() {
       "/common/UI/money.png",
     ];
     let loaded = 0;
-    const total = assets.length;
-    const update = () => {
-      loaded++;
-      setProgress(Math.round((loaded / total) * 100));
-      if (loaded >= total) setTimeout(() => setIsLoading(false), 300);
-    };
-    assets.forEach((url) => {
+    imageUrls.forEach((url) => {
       const img = new Image();
-      img.onload = update;
-      img.onerror = update;
       img.src = url;
+      img.onload = img.onerror = () => {
+        loaded++;
+        setProgress(Math.round((loaded / imageUrls.length) * 100));
+        if (loaded === imageUrls.length) setTimeout(() => setIsLoading(false), 300);
+      };
     });
   }, []);
 
@@ -62,20 +60,16 @@ export default function SpirtuozPlayer() {
     const a = audioRef.current;
     if (!a || !a.duration) return;
     setPlayProgress((a.currentTime / a.duration) * 100);
-    try {
-      if (a.buffered.length > 0) {
-        const loaded =
-          (a.buffered.end(a.buffered.length - 1) / a.duration) * 100;
-        setBufferProgress(Math.min(loaded, 100));
-      }
-    } catch {}
+    if (a.buffered.length > 0) {
+      const loaded = (a.buffered.end(a.buffered.length - 1) / a.duration) * 100;
+      setBufferProgress(Math.min(loaded, 100));
+    }
     setTime({ cur: a.currentTime, dur: a.duration });
     rafRef.current = requestAnimationFrame(updateVisuals);
   };
 
   const safePlay = async () => {
     const a = audioRef.current;
-    if (!a) return;
     try {
       await a.play();
       cancelAnimationFrame(rafRef.current);
@@ -92,16 +86,29 @@ export default function SpirtuozPlayer() {
       a.pause();
       cancelAnimationFrame(rafRef.current);
       setIsPlaying(false);
-      return;
+    } else {
+      if (a.readyState < 1) a.load();
+      await safePlay();
+      setIsPlaying(true);
     }
-    await safePlay();
-    setIsPlaying(true);
   };
 
   const next = () => setCurrent((c) => (c + 1) % playlist.length);
   const prev = () => setCurrent((c) => (c - 1 + playlist.length) % playlist.length);
 
-  // ---------- СМЕНА ТРЕКА ----------
+  // --- автопереход ---
+  useEffect(() => {
+    const a = audioRef.current;
+    if (!a) return;
+    const handleEnded = () => {
+      setCurrent((c) => (c + 1) % playlist.length);
+      setIsPlaying(true);
+    };
+    a.addEventListener("ended", handleEnded);
+    return () => a.removeEventListener("ended", handleEnded);
+  }, []);
+
+  // --- смена трека ---
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -109,44 +116,29 @@ export default function SpirtuozPlayer() {
     a.pause();
     setBufferProgress(0);
     setPlayProgress(0);
-    setTime({ cur: 0, dur: 0 });
-
-    const onCanPlay = () => {
-      setTime({ cur: 0, dur: a.duration || 0 });
-      if (isPlaying) safePlay();
-      a.removeEventListener("canplay", onCanPlay);
-    };
-    const onEnded = () => next();
-
-    a.addEventListener("canplay", onCanPlay);
-    a.addEventListener("ended", onEnded);
     a.load();
-
-    return () => {
-      a.removeEventListener("canplay", onCanPlay);
-      a.removeEventListener("ended", onEnded);
+    const onReady = () => {
+      if (isPlaying) safePlay();
+      a.removeEventListener("canplay", onReady);
     };
+    a.addEventListener("canplay", onReady);
   }, [current]);
 
   const handleSeek = (e) => {
     const rect = progressRef.current.getBoundingClientRect();
-    const x = e.clientX || (e.touches && e.touches[0].clientX);
-    const ratio = Math.min(Math.max((x - rect.left) / rect.width, 0), 1);
-    const newTime = ratio * (time.dur || 0);
-    audioRef.current.currentTime = newTime;
-    setTime({ ...time, cur: newTime });
+    const x = e.clientX || e.touches?.[0].clientX;
+    const ratio = (x - rect.left) / rect.width;
+    audioRef.current.currentTime = ratio * (time.dur || 0);
   };
 
   const playTrack = (i) => {
-    const a = audioRef.current;
-    if (!a) return;
     if (i === current) {
-      if (!isPlaying) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
         safePlay();
         setIsPlaying(true);
-      } else {
-        a.pause();
-        setIsPlaying(false);
       }
     } else {
       setCurrent(i);
@@ -154,22 +146,39 @@ export default function SpirtuozPlayer() {
     }
   };
 
+  // --- ZIP с прогрессом ---
   const downloadZipAlbum = async () => {
-    setShowDownloadChoice(false);
-    const zip = new JSZip();
-    const folder = zip.folder("8BitDoodle by Spirtuoz");
+    setIsZipping(true);
+    setZipProgress(0);
     try {
-      const cover = await fetch("/player/cover.jpg").then((r) => r.blob());
-      folder.file("cover.jpg", cover);
-    } catch {}
-    for (const track of playlist) {
+      const zip = new JSZip();
+      const albumFolder = zip.folder("8BitDoodle by Spirtuoz");
       try {
-        const blob = await fetch(track.src).then((r) => r.blob());
-        folder.file(`${track.title}.mp3`, blob);
+        const coverResp = await fetch("/player/cover.jpg");
+        albumFolder.file("cover.jpg", await coverResp.blob());
       } catch {}
+      for (let i = 0; i < playlist.length; i++) {
+        try {
+          const res = await fetch(playlist[i].src);
+          albumFolder.file(playlist[i].title + ".mp3", await res.blob());
+        } catch {}
+        setZipProgress(Math.round(((i + 1) / playlist.length) * 90));
+      }
+      const blob = await zip.generateAsync(
+        { type: "blob", compression: "DEFLATE" },
+        (meta) => setZipProgress(90 + Math.round(meta.percent / 10))
+      );
+      saveAs(blob, "8BitDoodle by Spirtuoz.zip");
+      setZipProgress(100);
+    } catch (e) {
+      alert("Ошибка создания архива");
+    } finally {
+      setTimeout(() => {
+        setIsZipping(false);
+        setShowDownloadChoice(false);
+        setZipProgress(0);
+      }, 800);
     }
-    const blob = await zip.generateAsync({ type: "blob" });
-    saveAs(blob, "8BitDoodle by Spirtuoz.zip");
   };
 
   if (isLoading)
@@ -180,8 +189,7 @@ export default function SpirtuozPlayer() {
       {/* кнопка выход */}
       <button
         onClick={() => router.push("/")}
-        className="absolute top-4 right-4 text-[#6eff8c] text-3xl hover:scale-110 transition"
-      >
+        className="absolute top-4 right-4 text-[#6eff8c] text-3xl hover:scale-110 transition">
         ×
       </button>
 
@@ -195,53 +203,48 @@ export default function SpirtuozPlayer() {
 
       <audio ref={audioRef} src={playlist[current].src} preload="auto" />
 
-      {/* исправленный круглый прогресс */}
-      <div className="relative flex items-center justify-center mt-8 mb-4">
-        <svg
-          className="absolute w-32 h-32"
-          viewBox="0 0 100 100"
-          style={{
-            transform: "rotate(-90deg)",
-            transformOrigin: "50% 50%",
-            WebkitTransformOrigin: "50% 50%",
-          }}
-        >
-          <circle cx="50" cy="50" r="46" stroke="#2e2e2e" strokeWidth="5" fill="none" />
-          <circle
-            cx="50"
-            cy="50"
-            r="46"
-            stroke="#6eff8c40"
-            strokeWidth="5"
-            fill="none"
-            strokeDasharray={`${(bufferProgress / 100) * 2 * Math.PI * 46},999`}
-            strokeLinecap="round"
-          />
-          <circle
-            cx="50"
-            cy="50"
-            r="41"
-            stroke="#6eff8c"
-            strokeWidth="4"
-            fill="none"
-            strokeDasharray={`${(playProgress / 100) * 2 * Math.PI * 41},999`}
-            strokeLinecap="round"
-          />
-        </svg>
+      {/* блок управления */}
+      <div className="flex items-center justify-center gap-12 mt-10 mb-4">
+        {/* назад */}
+        <button onClick={prev} className="hover:scale-110 transition">
+          <img src="/player/back.png" alt="prev" className="w-10 h-10" />
+        </button>
 
-        <button
-          onClick={playPause}
-          className="w-24 h-24 rounded-full flex items-center justify-center bg-[#6eff8c]/15 border border-[#6eff8c]/60 shadow-[0_0_10px_#6eff8c40] transition-transform z-10"
-        >
-          <img
-            src={isPlaying ? "/player/pause.png" : "/player/play.png"}
-            alt="play"
-            className="w-12 h-12"
-          />
+        {/* плей */}
+        <div className="relative flex items-center justify-center">
+          <svg className="absolute w-28 h-28 -rotate-90" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" stroke="#2e2e2e" strokeWidth="5" fill="none" />
+            <circle
+              cx="50" cy="50" r="46" stroke="#6eff8c40" strokeWidth="5"
+              fill="none"
+              strokeDasharray={`${(bufferProgress / 100) * 2 * Math.PI * 46},999`}
+              strokeLinecap="round"
+            />
+            <circle
+              cx="50" cy="50" r="41" stroke="#6eff8c" strokeWidth="4"
+              fill="none"
+              strokeDasharray={`${(playProgress / 100) * 2 * Math.PI * 41},999`}
+              strokeLinecap="round"
+            />
+          </svg>
+          <button
+            onClick={playPause}
+            className="w-20 h-20 rounded-full flex items-center justify-center bg-[#6eff8c]/15 border border-[#6eff8c]/60 shadow-[0_0_10px_#6eff8c40] transition-transform z-10 hover:shadow-[0_0_15px_#6eff8c80]">
+            <img
+              src={isPlaying ? "/player/pause.png" : "/player/play.png"}
+              alt="play"
+              className="w-10 h-10"
+            />
+          </button>
+        </div>
+
+        {/* вперед */}
+        <button onClick={next} className="hover:scale-110 transition">
+          <img src="/player/forward.png" alt="next" className="w-10 h-10" />
         </button>
       </div>
 
-      {/* время и прогресс-линия */}
+      {/* время и прогресс */}
       <div className="w-full max-w-md px-4 mt-3">
         <div className="flex justify-between text-sm text-gray-400 mb-1">
           <span>{formatTime(time.cur)}</span>
@@ -250,14 +253,13 @@ export default function SpirtuozPlayer() {
         <div
           ref={progressRef}
           className="w-full h-2 bg-white/10 rounded-full overflow-hidden cursor-pointer"
-          onClick={handleSeek}
-        >
+          onClick={handleSeek}>
           <div className="h-full bg-[#6eff8c]" style={{ width: `${playProgress}%` }} />
         </div>
       </div>
 
       {/* название */}
-      <p className="text-[#6eff8c] text-lg font-semibold truncate mt-6">
+      <p className="text-[#6eff8c] text-lg font-semibold truncate mt-6 max-w-md text-center">
         {playlist[current].title}
       </p>
 
@@ -269,33 +271,108 @@ export default function SpirtuozPlayer() {
             onClick={() => playTrack(i)}
             className={`p-2 px-3 rounded-lg mb-2 cursor-pointer ${
               i === current ? "bg-[#6eff8c]/40 text-white" : "hover:bg-[#6eff8c]/15 text-gray-300"
-            }`}
-          >
+            }`}>
             {i + 1}. {t.title}
           </div>
         ))}
       </div>
 
-      {/* кнопки */}
-      <div className="flex flex-wrap gap-6 mb-12 justify-center">
+      {/* действия */}
+      <div className="flex flex-col items-center gap-3 mt-2 mb-[calc(env(safe-area-inset-bottom)+70px)]">
         <button
           onClick={() => setShowDownloadChoice(true)}
-          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm"
-        >
+          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm">
           <img src="/player/zip.png" className="w-5 h-5" /> Скачать альбом
         </button>
-
         <a
           href="https://tips.yandex.ru/guest/payment/3578262"
           target="_blank"
-          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm"
-        >
-          <img src="/common/UI/money.png" className="w-5 h-5" /> Поддержать автора
+          className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm">
+          <img src="/common/UI/money.png" className="w-5 h-5" /> Задонатить автору
         </a>
       </div>
 
-      {/* футтер */}
-      <div className="fixed bottom-0 left-0 w-full pb-[env(safe-area-inset-bottom)] z-40">
+      {/* Модалка ZIP и прогресс */}
+      {showDownloadChoice && showDownloadChoice !== "tracks" && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#101010] border border-[#6eff8c]/40 rounded-2xl shadow-[0_0_20px_#6eff8c40] w-full max-w-sm p-6 relative text-center text-[#6eff8c]">
+            <button
+              onClick={() => !isZipping && setShowDownloadChoice(false)}
+              className="absolute top-3 right-4 text-[#6eff8c] text-3xl hover:scale-110 transition">
+              ×
+            </button>
+            {!isZipping ? (
+              <>
+                <h2 className="text-xl mb-4 font-semibold">Скачать альбом</h2>
+                <button
+                  onClick={downloadZipAlbum}
+                  className="w-full flex items-center justify-center gap-2 py-2 mb-3 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 transition">
+                  <img src="/player/zip.png" className="w-5 h-5" />
+                  ZIP-архив целиком
+                </button>
+                <button
+                  onClick={() => setShowDownloadChoice("tracks")}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 transition">
+                  <img src="/player/music.png" className="w-5 h-5" />
+                  Отдельные треки
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-lg mb-4 font-semibold">Создаём ZIP-архив...</h2>
+                <div className="relative w-full h-3 bg-[#222] rounded-full overflow-hidden mb-3">
+                  <div
+                    className="absolute left-0 top-0 h-full bg-[#6eff8c] transition-all"
+                    style={{ width: `${zipProgress}%` }}
+                  />
+                </div>
+                <p className="text-sm text-gray-400">{zipProgress}%</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Модалка треков */}
+      {showDownloadChoice === "tracks" && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-[#101010] border border-[#6eff8c]/40 rounded-2xl shadow-[0_0_20px_#6eff8c40] w-full max-w-md p-6 relative text-[#6eff8c] text-center">
+            <button
+              onClick={() => setShowDownloadChoice(false)}
+              className="absolute top-3 right-4 text-[#6eff8c] text-3xl hover:scale-110 transition">
+              ×
+            </button>
+            <h2 className="text-xl mb-5 font-semibold">Отдельные треки</h2>
+            <img
+              src="/player/cover.jpg"
+              alt="cover"
+              className="w-48 h-48 object-cover rounded-xl mx-auto mb-5 shadow-[0_0_15px_#6eff8c80]"
+            />
+            <div className="text-left max-h-[50vh] overflow-y-auto px-1 scrollbar-thin">
+              {playlist.map((t, i) => (
+                <a
+                  key={i}
+                  href={t.src}
+                  download={`${t.title}.mp3`}
+                  target="_blank"
+                  className="flex items-center gap-3 mb-2 px-3 py-2 rounded-lg bg-[#1a1a1a]/60 border border-[#6eff8c20] hover:bg-[#6eff8c]/20 transition text-sm text-[#aaffc1]">
+                  <img src="/player/save.png" className="w-4 h-4" />
+                  <span className="truncate">{t.title}</span>
+                </a>
+              ))}
+            </div>
+            <a
+              href="https://tips.yandex.ru/guest/payment/3578262"
+              target="_blank"
+              className="inline-flex items-center gap-2 mt-6 text-sm text-[#6eff8c] hover:text-[#aaffc1]">
+              <img src="/common/UI/money.png" className="w-5 h-5" />
+              Поддержать автора
+            </a>
+          </div>
+        </div>
+      )}
+
+      <div className="relative z-40 w-full bg-black/80 backdrop-blur-sm pt-3 pb-[calc(env(safe-area-inset-bottom)+25px)]">
         <FooterLink />
       </div>
 
@@ -303,16 +380,16 @@ export default function SpirtuozPlayer() {
         .animate-neon {
           text-shadow: 0 0 6px #6eff8c, 0 0 15px #6eff8c;
         }
+        .scrollbar-thin {
+          scrollbar-width: thin;
+          scrollbar-color: #6eff8c40 transparent;
+        }
         .scrollbar-thin::-webkit-scrollbar {
           width: 6px;
         }
         .scrollbar-thin::-webkit-scrollbar-thumb {
           background-color: #6eff8c60;
           border-radius: 8px;
-        }
-        svg circle {
-          transform-box: fill-box;
-          transform-origin: center;
         }
       `}</style>
     </div>
