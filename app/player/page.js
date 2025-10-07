@@ -22,6 +22,7 @@ export default function SpirtuozPlayer() {
   const audioRef = useRef(null);
   const rafRef = useRef(null);
   const progressRef = useRef(null);
+  const cancelZipRef = useRef(false); // <--- флаг отмены архивации
 
   // --- Лоадер ---
   useEffect(() => {
@@ -146,38 +147,53 @@ export default function SpirtuozPlayer() {
     }
   };
 
-  // --- ZIP с прогрессом ---
+  // --- ZIP с возможностью отмены ---
   const downloadZipAlbum = async () => {
     setIsZipping(true);
     setZipProgress(0);
+    cancelZipRef.current = false;
+
     try {
       const zip = new JSZip();
       const albumFolder = zip.folder("8BitDoodle by Spirtuoz");
+
+      // обложка
       try {
         const coverResp = await fetch("/player/cover.jpg");
         albumFolder.file("cover.jpg", await coverResp.blob());
       } catch {}
+
+      // треки
       for (let i = 0; i < playlist.length; i++) {
+        if (cancelZipRef.current) throw new Error("cancelled");
         try {
           const res = await fetch(playlist[i].src);
           albumFolder.file(playlist[i].title + ".mp3", await res.blob());
         } catch {}
         setZipProgress(Math.round(((i + 1) / playlist.length) * 90));
       }
+
+      // генерация архива
       const blob = await zip.generateAsync(
         { type: "blob", compression: "DEFLATE" },
-        (meta) => setZipProgress(90 + Math.round(meta.percent / 10))
+        (meta) => {
+          if (cancelZipRef.current) throw new Error("cancelled");
+          setZipProgress(90 + Math.round(meta.percent / 10));
+        }
       );
-      saveAs(blob, "8BitDoodle by Spirtuoz.zip");
-      setZipProgress(100);
+
+      if (!cancelZipRef.current) {
+        saveAs(blob, "8BitDoodle by Spirtuoz.zip");
+        setZipProgress(100);
+      }
     } catch (e) {
-      alert("Ошибка создания архива");
+      if (e.message !== "cancelled") alert("Ошибка при создании архива!");
     } finally {
       setTimeout(() => {
         setIsZipping(false);
         setShowDownloadChoice(false);
         setZipProgress(0);
-      }, 800);
+      }, 300);
     }
   };
 
@@ -186,14 +202,14 @@ export default function SpirtuozPlayer() {
 
   return (
     <div className="relative min-h-screen bg-black text-white flex flex-col items-center pb-40 px-4 overflow-hidden">
-      {/* кнопка выход */}
+      {/* выход */}
       <button
         onClick={() => router.push("/")}
         className="absolute top-4 right-4 text-[#6eff8c] text-3xl hover:scale-110 transition">
         ×
       </button>
 
-      {/* Заголовок */}
+      {/* заголовок */}
       <div className="mt-10 text-center">
         <h1 className="text-4xl md:text-5xl font-extrabold text-[#6eff8c] tracking-wider animate-neon">
           8-bit DOODLE
@@ -203,25 +219,25 @@ export default function SpirtuozPlayer() {
 
       <audio ref={audioRef} src={playlist[current].src} preload="auto" />
 
-      {/* блок управления */}
+      {/* кнопки управления */}
       <div className="flex items-center justify-center gap-12 mt-10 mb-4">
-        {/* назад */}
         <button onClick={prev} className="hover:scale-110 transition">
           <img src="/player/back.png" alt="prev" className="w-10 h-10" />
         </button>
 
-        {/* плей */}
         <div className="relative flex items-center justify-center">
           <svg className="absolute w-28 h-28 -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="46" stroke="#2e2e2e" strokeWidth="5" fill="none" />
             <circle
-              cx="50" cy="50" r="46" stroke="#6eff8c40" strokeWidth="5"
+              cx="50" cy="50" r="46"
+              stroke="#6eff8c40" strokeWidth="5"
               fill="none"
               strokeDasharray={`${(bufferProgress / 100) * 2 * Math.PI * 46},999`}
               strokeLinecap="round"
             />
             <circle
-              cx="50" cy="50" r="41" stroke="#6eff8c" strokeWidth="4"
+              cx="50" cy="50" r="41"
+              stroke="#6eff8c" strokeWidth="4"
               fill="none"
               strokeDasharray={`${(playProgress / 100) * 2 * Math.PI * 41},999`}
               strokeLinecap="round"
@@ -238,13 +254,12 @@ export default function SpirtuozPlayer() {
           </button>
         </div>
 
-        {/* вперед */}
         <button onClick={next} className="hover:scale-110 transition">
           <img src="/player/forward.png" alt="next" className="w-10 h-10" />
         </button>
       </div>
 
-      {/* время и прогресс */}
+      {/* прогресс и тайминг */}
       <div className="w-full max-w-md px-4 mt-3">
         <div className="flex justify-between text-sm text-gray-400 mb-1">
           <span>{formatTime(time.cur)}</span>
@@ -263,7 +278,7 @@ export default function SpirtuozPlayer() {
         {playlist[current].title}
       </p>
 
-      {/* список треков */}
+      {/* список */}
       <div className="w-full max-w-md mt-4 border-t border-white/10 pt-3 bg-[#101010]/70 backdrop-blur-sm overflow-y-auto h-[28vh] mb-4 scrollbar-thin rounded-xl">
         {playlist.map((t, i) => (
           <div
@@ -292,15 +307,25 @@ export default function SpirtuozPlayer() {
         </a>
       </div>
 
-      {/* Модалка ZIP и прогресс */}
+      {/* Модалка ZIP с возможностью отмены */}
       {showDownloadChoice && showDownloadChoice !== "tracks" && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[#101010] border border-[#6eff8c]/40 rounded-2xl shadow-[0_0_20px_#6eff8c40] w-full max-w-sm p-6 relative text-center text-[#6eff8c]">
             <button
-              onClick={() => !isZipping && setShowDownloadChoice(false)}
+              onClick={() => {
+                if (isZipping) {
+                  cancelZipRef.current = true;
+                  setIsZipping(false);
+                  setShowDownloadChoice(false);
+                  setZipProgress(0);
+                } else {
+                  setShowDownloadChoice(false);
+                }
+              }}
               className="absolute top-3 right-4 text-[#6eff8c] text-3xl hover:scale-110 transition">
               ×
             </button>
+
             {!isZipping ? (
               <>
                 <h2 className="text-xl mb-4 font-semibold">Скачать альбом</h2>
