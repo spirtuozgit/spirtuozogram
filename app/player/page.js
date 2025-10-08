@@ -22,11 +22,7 @@ export default function SpirtuozPlayer() {
   const audioRef = useRef(null);
   const rafRef = useRef(null);
   const progressRef = useRef(null);
-<<<<<<< HEAD
-  const cancelZipRef = useRef(false); // <--- флаг отмены архивации
-=======
   const cancelZipRef = useRef(false);
->>>>>>> 959f91f (auto update)
 
   // --- Лоадер ---
   useEffect(() => {
@@ -101,10 +97,6 @@ export default function SpirtuozPlayer() {
   const next = () => setCurrent((c) => (c + 1) % playlist.length);
   const prev = () => setCurrent((c) => (c - 1 + playlist.length) % playlist.length);
 
-<<<<<<< HEAD
-  // --- автопереход ---
-=======
->>>>>>> 959f91f (auto update)
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -116,10 +108,6 @@ export default function SpirtuozPlayer() {
     return () => a.removeEventListener("ended", handleEnded);
   }, []);
 
-<<<<<<< HEAD
-  // --- смена трека ---
-=======
->>>>>>> 959f91f (auto update)
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
@@ -157,10 +145,6 @@ export default function SpirtuozPlayer() {
     }
   };
 
-<<<<<<< HEAD
-  // --- ZIP с возможностью отмены ---
-=======
->>>>>>> 959f91f (auto update)
   const downloadZipAlbum = async () => {
     setIsZipping(true);
     setZipProgress(0);
@@ -170,19 +154,11 @@ export default function SpirtuozPlayer() {
       const zip = new JSZip();
       const albumFolder = zip.folder("8BitDoodle by Spirtuoz");
 
-<<<<<<< HEAD
-      // обложка
-=======
->>>>>>> 959f91f (auto update)
       try {
         const coverResp = await fetch("/player/cover.jpg");
         albumFolder.file("cover.jpg", await coverResp.blob());
       } catch {}
 
-<<<<<<< HEAD
-      // треки
-=======
->>>>>>> 959f91f (auto update)
       for (let i = 0; i < playlist.length; i++) {
         if (cancelZipRef.current) throw new Error("cancelled");
         try {
@@ -192,10 +168,6 @@ export default function SpirtuozPlayer() {
         setZipProgress(Math.round(((i + 1) / playlist.length) * 90));
       }
 
-<<<<<<< HEAD
-      // генерация архива
-=======
->>>>>>> 959f91f (auto update)
       const blob = await zip.generateAsync(
         { type: "blob", compression: "DEFLATE" },
         (meta) => {
@@ -241,11 +213,7 @@ export default function SpirtuozPlayer() {
 
       <audio ref={audioRef} src={playlist[current].src} preload="auto" />
 
-<<<<<<< HEAD
-      {/* кнопки управления */}
-=======
       {/* кнопки */}
->>>>>>> 959f91f (auto update)
       <div className="flex items-center justify-center gap-12 mt-10 mb-4">
         <button onClick={prev} className="hover:scale-110 transition">
           <img src="/player/back.png" alt="prev" className="w-10 h-10" />
@@ -285,11 +253,7 @@ export default function SpirtuozPlayer() {
         </button>
       </div>
 
-<<<<<<< HEAD
-      {/* прогресс и тайминг */}
-=======
       {/* прогресс */}
->>>>>>> 959f91f (auto update)
       <div className="w-full max-w-md px-4 mt-3">
         <div className="flex justify-between text-sm text-gray-400 mb-1">
           <span>{formatTime(time.cur)}</span>
@@ -329,24 +293,14 @@ export default function SpirtuozPlayer() {
           className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm">
           <img src="/player/zip.png" className="w-5 h-5" /> Скачать альбом
         </button>
-<<<<<<< HEAD
-        <a
-          href="https://tips.yandex.ru/guest/payment/3578262"
-          target="_blank"
-=======
         <button
           onClick={() => router.push("/donate")}
->>>>>>> 959f91f (auto update)
           className="flex items-center gap-2 px-5 py-2 rounded-md bg-[#6eff8c]/20 border border-[#6eff8c]/50 hover:bg-[#6eff8c]/40 shadow-[0_0_10px_#6eff8c40] transition text-sm">
           <img src="/common/UI/money.png" className="w-5 h-5" /> Задонатить автору
         </button>
       </div>
 
-<<<<<<< HEAD
-      {/* Модалка ZIP с возможностью отмены */}
-=======
       {/* модалка ZIP */}
->>>>>>> 959f91f (auto update)
       {showDownloadChoice && showDownloadChoice !== "tracks" && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-[#101010] border border-[#6eff8c]/40 rounded-2xl shadow-[0_0_20px_#6eff8c40] w-full max-w-sm p-6 relative text-center text-[#6eff8c]">
@@ -397,11 +351,7 @@ export default function SpirtuozPlayer() {
         </div>
       )}
 
-<<<<<<< HEAD
-      {/* Модалка треков */}
-=======
       {/* модалка треков */}
->>>>>>> 959f91f (auto update)
       {showDownloadChoice === "tracks" && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-[#101010] border border-[#6eff8c]/40 rounded-2xl shadow-[0_0_20px_#6eff8c40] w-full max-w-md p-6 relative text-[#6eff8c] text-center">
@@ -429,15 +379,6 @@ export default function SpirtuozPlayer() {
                 </a>
               ))}
             </div>
-<<<<<<< HEAD
-            <a
-              href="https://tips.yandex.ru/guest/payment/3578262"
-              target="_blank"
-              className="inline-flex items-center gap-2 mt-6 text-sm text-[#6eff8c] hover:text-[#aaffc1]">
-              <img src="/common/UI/money.png" className="w-5 h-5" />
-              Поддержать автора
-            </a>
-=======
             <button
               onClick={() => {
                 setShowDownloadChoice(false);
@@ -447,7 +388,6 @@ export default function SpirtuozPlayer() {
               <img src="/common/UI/money.png" className="w-5 h-5" />
               Поддержать автора
             </button>
->>>>>>> 959f91f (auto update)
           </div>
         </div>
       )}
