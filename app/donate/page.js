@@ -119,7 +119,7 @@ export default function DonatePage() {
             </motion.button>
 
             <p className="text-zinc-500 text-sm mt-6 text-center max-w-sm">
-              Спасибо за поддержку! Каждый донат помогает развивать Spirtuozogram 🌿
+              Спасибо за поддержку! Каждый донат помогает мне не забить хуй на творчество 🌿
             </p>
           </motion.div>
         )}
@@ -127,3 +127,4 @@ export default function DonatePage() {
     </div>
   );
 }
+
