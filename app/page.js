@@ -46,8 +46,9 @@ export default function Menu() {
     { href: "/doodletest", label: "Дудло-Тест", icon: "/common/icons/doodle_icon.png" },
     { href: "/pop", label: "Тык-Пык", icon: "/common/icons/pop_icon.png" },
     { href: "/player", label: "8-bit Doodle", icon: "/common/icons/player_icon.png" },
-    { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
-    { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
+    { href: "/ivan-memory", label: "Что пил Иван?", icon: "/common/icons/ivan_icon.png"},
+    { href: "/donate", label: "Донаты", icon: "/common/icons/donate_icon.png"},
+ // { href: "/путь", label: "подпись", icon: "/common/icons/иконка_icon.png", вкл-выкл disabled: true },
   ];
 
   // --- Экран проверки возраста ---
@@ -144,23 +145,22 @@ export default function Menu() {
       </div>
 
       {/* Кнопка поддержать автора */}
-      <div className="flex justify-center pb-2">
-        <button
-          onClick={() => {
-            playSound("click");
-                      window.open("https://tips.yandex.ru/guest/payment/3578262", "_blank");
-          }}
-          className="flex items-center gap-2 px-3 py-1 bg-green-600 text-white text-[10px] sm:text-xs font-купгдфк hover:bg-green-500 transition rounded-none"
-        >
-          <img
-            src="/common/UI/money.png"
-            alt="money icon"
-            className="w-4 h-4 sm:w-5 sm:h-5"
-          />
-          ПОДДЕРЖАТЬ
-        </button>
-      </div>
-
+<div className="flex justify-center pb-2">
+  <button
+    onClick={() => {
+      playSound("click");
+      window.location.href = "/donate"; // 👈 теперь открывает внутреннюю страницу донатов
+    }}
+    className="flex items-center gap-2 px-3 py-1 bg-green-600 text-white text-[10px] sm:text-xs hover:bg-green-500 transition rounded-none"
+  >
+    <img
+      src="/common/UI/money.png"
+      alt="money icon"
+      className="w-4 h-4 sm:w-5 sm:h-5"
+    />
+    ПОДДЕРЖАТЬ
+  </button>
+</div>
       {/* Футер */}
       <div className="flex-shrink-0 text-center text-gray-500 text-[10px] sm:text-[10px] md:text-xs pb-[env(safe-area-inset-bottom)] mb-10 py-0">
         <a
