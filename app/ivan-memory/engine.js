@@ -25,7 +25,7 @@ export class SimonEngine {
       "#FF595E", "#FFCA3A", "#8AC926", "#1982C4", "#6A4C93",
       "#FF9F1C", "#2EC4B6", "#E71D36", "#FFD60A", "#9B5DE5",
       "#00BBF9", "#F15BB5", "#7AFF3F", "#06D6A0", "#F72585",
-      "#B5179E", "#7209B7", "#560BAD", "#480CA8", "#3A0CA3",
+      "#B5179E", "#F243FD", "#B16EFF", "#FF80D0", "##95CEED",
       "#4361EE", "#4895EF", "#4CC9F0", "#90F1EF"
     ];
 
