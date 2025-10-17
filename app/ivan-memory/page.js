@@ -4,13 +4,12 @@ import GameGrid from "./GameGrid";
 import IntroScreen from "./IntroScreen";
 import SceneText from "./SceneText";
 import RecordsModal from "./RecordsModal";
-import Loader from "../../components/Loader";
 import engine from "./engine";
 import { supabase } from "../../utils/supabase";
 import { playTone, playMusic, stopMusic, getContext } from "../../utils/audio";
 
 export default function IvanMemory() {
-  const [scene, setScene] = useState("loader");
+  const [scene, setScene] = useState("intro");
   const [state, setState] = useState({});
   const [records, setRecords] = useState([]);
   const [gridKey, setGridKey] = useState(0);
@@ -36,8 +35,8 @@ export default function IvanMemory() {
   }
 
   useEffect(() => {
-    if (scene !== "loader") loadScores();
-  }, [scene]);
+    loadScores();
+  }, []);
 
   // 🎵 безопасный запуск музыки
   async function tryPlayMusic() {
@@ -59,11 +58,10 @@ export default function IvanMemory() {
     }
   }
 
-  // 🌀 после загрузчика — сразу музыка и интро
-  const handleLoaderReady = async () => {
-    await tryPlayMusic();
-    setScene("intro");
-  };
+  // 🔊 Запуск музыки при загрузке страницы
+  useEffect(() => {
+    tryPlayMusic();
+  }, []);
 
   // 🔁 рестарт
   function restart() {
@@ -148,19 +146,6 @@ export default function IvanMemory() {
 
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#000", position: "relative" }}>
-      {/* 🌀 LOADER */}
-      {scene === "loader" && (
-        <Loader
-          files={[
-            "/ivan-memory/title.png",
-            "/ivan-memory/ivan_art.png",
-            "/sound/8BitDoodle – MorningJuce_conv.m4a",
-            "/common/sound/click.ogg",
-          ]}
-          onReady={handleLoaderReady}
-        />
-      )}
-
       {/* 🏁 INTRO */}
       {scene === "intro" && (
         <IntroScreen
