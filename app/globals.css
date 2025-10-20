@@ -18,7 +18,8 @@ html, body {
   color: #fff;
   font-family: "Rubik", sans-serif;
   overflow-x: hidden;
-  overflow-y: hidden; /* ✅ убираем вертикальную прокрутку */
+  overflow-y: auto; /* ✅ разрешаем прокрутку для страниц с длинным текстом */
+  scroll-behavior: smooth;
 }
 
 /* запрет выделения и перетаскивания */
@@ -95,4 +96,74 @@ html, body {
   transform: rotate(90deg);
   top: 0;
   left: 0;
+}
+
+/* ---------- Типографика для Markdown (Tailwind Typography) ---------- */
+.prose {
+  max-width: 65ch;
+  font-family: "Rubik", sans-serif;
+}
+
+.prose-invert {
+  color: #f2f2f2;
+}
+
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3,
+.prose-invert h4 {
+  color: #ffffff;
+  font-weight: 500;
+  line-height: 1.3;
+  margin-top: 1.8em;
+  margin-bottom: 0.6em;
+}
+
+.prose-invert p {
+  color: #f2f2f2;
+  margin-bottom: 1em;
+  line-height: 1.8;
+}
+
+.prose-invert strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.prose-invert a {
+  color: #6ae3ff;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.prose-invert a:hover {
+  text-decoration: underline;
+  color: #9ae8ff;
+}
+
+.prose-invert blockquote {
+  border-left: 4px solid #444;
+  padding-left: 1em;
+  color: #ccc;
+  font-style: italic;
+  margin: 1.5em 0;
+}
+
+.prose-invert ul,
+.prose-invert ol {
+  margin-left: 1.5em;
+  margin-bottom: 1.2em;
+}
+
+.prose-invert code {
+  background: #1a1a1a;
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+  color: #fbbf24;
+  font-size: 0.95em;
+}
+
+.prose-invert hr {
+  border-color: #333;
+  margin: 2em 0;
 }

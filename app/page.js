@@ -46,9 +46,9 @@ export default function Menu() {
     { href: "/doodletest", label: "Дудло-Тест", icon: "/common/icons/doodle_icon.png" },
     { href: "/pop", label: "Тык-Пык", icon: "/common/icons/pop_icon.png" },
     { href: "/player", label: "8-bit Doodle", icon: "/common/icons/player_icon.png" },
-    { href: "/ivan-memory", label: "Что пил Иван?", icon: "/common/icons/ivan_icon.png"},
     { href: "/donate", label: "Донаты", icon: "/common/icons/donate_icon.png"},
- // { href: "/путь", label: "подпись", icon: "/common/icons/иконка_icon.png", вкл-выкл disabled: true },
+    { href: "/soon", label: "Скоро...", icon: "/common/icons/soon_icon.png", disabled: true },
+   // { href: "/путь", label: "подпись", icon: "/common/icons/иконка_icon.png", вкл-выкл disabled: true },
   ];
 
   // --- Экран проверки возраста ---
